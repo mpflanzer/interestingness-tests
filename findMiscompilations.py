@@ -40,10 +40,7 @@ if __name__ == '__main__':
             print('CREDUCE_TEST_CLLAUNCHER not defined!')
             sys.exit(1)
 
-        clang = os.environ.get('CREDUCE_TEST_CLANG')
-        if not clang:
-            print('CREDUCE_TEST_CLANG not defined!')
-            sys.exit(1)
+        clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
 
         libclcIncludePath = os.environ.get('CREDUCE_TEST_LIBCLC_INCLUDE_PATH')
         if not libclcIncludePath:
