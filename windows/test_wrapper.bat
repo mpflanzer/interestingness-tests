@@ -1,1 +1,1 @@
-C:\Users\Administrator\Sources\msc_project\creduce\test_miscompilation.py
+C:\Users\Administrator\Sources\msc_project\interestingness-tests\openCLTest.py %1
