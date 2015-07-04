@@ -13,8 +13,8 @@ if __name__ == '__main__':
     if sys.platform == 'win32':
         parser.add_argument('--oclgrind-platform', help='Platform for Oclgrind')
         parser.add_argument('--oclgrind-device', help='Device for Oclgrind')
-    parser.add_argument('test', narg=1, help='Test script')
-    parser.add_argument('kernel', narg=1, help='OpenCL kernel')
+    parser.add_argument('test', nargs=1, help='Test script')
+    parser.add_argument('kernel', nargs=1, help='OpenCL kernel')
 
     args = parser.parse_args()
 
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     else:
         env['CREDUCE_TEST_PLATFORM'] = args.platform
 
-    if not args.testDevice:
+    if not args.device:
         if not env.get('CREDUCE_TEST_DEVICE'):
             parser.error('No device specified and CREDUCE_TEST_DEVICE not defined!')
     else:
@@ -60,12 +60,17 @@ if __name__ == '__main__':
         else:
             env['CREDUCE_TEST_OCLGRIND_DEVICE'] = args.oclgrind_device
 
-    creduceArgs = ['creduce', '-n', '1']
+    if sys.platform == 'win32':
+        creduceArgs = ['perl', '--', 'creduce.pl']
+    else:
+        creduceArgs = ['creduce']
+
+    creduceArgs.extend(['-n', '1'])
 
     if args.verbose:
         creduceArgs.append('--verbose')
 
-    creduceArgs.append(args.test)
-    creduceArgs.append(args.kernel)
+    creduceArgs.extend(args.test)
+    creduceArgs.extend(args.kernel)
 
     subprocess.call(creduceArgs, env=env, universal_newlines=True)
