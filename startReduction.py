@@ -36,16 +36,16 @@ if __name__ == '__main__':
         if not env.get('CREDUCE_TEST_CLLAUNCHER'):
             parser.error('No cl-launcher specified and CREDUCE_TEST_CLLAUNCHER not defined!')
     else:
-        env['CREDUCE_TEST_CLLAUNCHER'] = args.cl_launcher
+        env['CREDUCE_TEST_CLLAUNCHER'] = os.path.abspath(args.cl_launcher)
 
     if args.clang:
-        env['CREDUCE_TEST_CLANG'] = args.clang
+        env['CREDUCE_TEST_CLANG'] = os.path.abspath(args.clang)
 
     if not args.libclc:
         if not env.get('CREDUCE_TEST_LIBCLC_INCLUDE_PATH'):
             parser.error('No libclc specified and CREDUCE_TEST_LIBCLC_INCLUDE_PATH not defined!')
     else:
-        env['CREDUCE_TEST_LIBCLC_INCLUDE_PATH'] = args.libclc
+        env['CREDUCE_TEST_LIBCLC_INCLUDE_PATH'] = os.path.abspath(args.libclc)
 
     if sys.platform == 'win32':
         if not args.oclgrind_platform:
