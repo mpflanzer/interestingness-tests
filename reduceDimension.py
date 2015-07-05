@@ -3,8 +3,9 @@
 import sys, os, re, openCLTest
 
 class DimensionReducer:
-    def __init__(self, kernelFile):
+    def __init__(self, kernelFile, kernelTest):
         self.kernelFile = open(kernelFile, 'r+')
+        self.kernelTest = kernelTest
         kernelContent = self.kernelFile.read()
 
         m = re.search('//(.*) -g ([0-9]+),([0-9]+),([0-9]+) -l ([0-9]+),([0-9]+),([0-9]+)\n', kernelContent)
@@ -39,13 +40,31 @@ class DimensionReducer:
         self.kernelFile.write(self.kernelContent)
         self.kernelFile.flush()
 
+    def reduce(self):
+        newGlobalDim = (1,1,1)
+        newLocalDim = (1,1,1)
+
+        self.rewriteDimensions(newGlobalDim, newLocalDim)
+
+        while(not self.kernelTest.isMiscompiled()):
+            (gDim, lDim) = self.updateDimensions(newGlobalDim, newLocalDim)
+
+            if gDim == newGlobalDim and lDim == newLocalDim:
+                return None
+            else:
+                newGlobalDim = gDim
+                newLocalDim = lDim
+
+            self.rewriteDimensions(newGlobalDim, newLocalDim)
+
+        return (newGlobalDim, newLocalDim)
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('No file specified!')
         sys.exit(1)
 
     kernelFile = sys.argv[1]
-    dimReducer = DimensionReducer(kernelFile)
 
     testPlatform = os.environ.get('CREDUCE_TEST_PLATFORM')
     if not testPlatform:
@@ -75,22 +94,11 @@ if __name__ == '__main__':
         openCLEnv = openCLTest.UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
 
     kernelTest = openCLTest.InterestingnessTest(openCLEnv, kernelFile, testPlatform, testDevice)
+    dimReducer = DimensionReducer(kernelFile, kernelTest)
+    result = dimReducer.reduce()
 
-    newGlobalDim = (1,1,1)
-    newLocalDim = (1,1,1)
-
-    dimReducer.rewriteDimensions(newGlobalDim, newLocalDim)
-
-    while(not kernelTest.isMiscompiled()):
-        (gDim, lDim) = dimReducer.updateDimensions(newGlobalDim, newLocalDim)
-
-        if gDim == newGlobalDim and lDim == newLocalDim:
-            print("File cannot be miscompiled!")
-            sys.exit(1)
-        else:
-            newGlobalDim = gDim
-            newLocalDim = lDim
-
-        dimReducer.rewriteDimensions(newGlobalDim, newLocalDim)
-
-    print('Reduced dimensions to %s, %s' % (newGlobalDim, newLocalDim))
+    if not result:
+        print("File cannot be miscompiled!")
+        sys.exit(1)
+    else:
+        print('Reduced dimensions to %s' % str(result))
