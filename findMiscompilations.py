@@ -73,7 +73,7 @@ if __name__ == '__main__':
             outputDir = args.output
 
         if not os.path.exists(outputDir):
-            os.path.mkdir(outputDir)
+            os.mkdir(outputDir)
 
         os.chdir(outputDir)
 
