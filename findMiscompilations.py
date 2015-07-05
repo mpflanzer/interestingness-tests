@@ -13,7 +13,7 @@ if __name__ == '__main__':
     processGroup.add_argument('--preprocess', action='store_true', help='Preprocess kernels')
     processGroup.add_argument('--preprocessed', action='store_true', help='Kernels are already preprocessed')
     parser.add_argument('--stop-after', dest='stopAfter', choices=['generate', 'preprocess'], help='When to stop')
-    parser.add_argument('output', nargs='?', help='Output directory')
+    parser.add_argument('--output', help='Output directory')
 
     args = parser.parse_args()
     timeLimit = 300
@@ -24,7 +24,7 @@ if __name__ == '__main__':
             print('CLSMITH_PATH not defined!')
             sys.exit(1)
 
-    if not args.stopAfter:
+    if args.stopAfter != 'generate':
         testPlatform = os.environ.get('CREDUCE_TEST_PLATFORM')
         if not testPlatform:
             print('CREDUCE_TEST_PLATFORM not defined!')
@@ -70,7 +70,10 @@ if __name__ == '__main__':
         if not args.output:
             outputDir = tempfile.mkdtemp(prefix='kernels.', dir='.')
         else:
-            outputDir = args.output[0]
+            outputDir = args.output
+
+        if not os.path.exists(outputDir):
+            os.path.mkdir(outputDir)
 
         os.chdir(outputDir)
 
