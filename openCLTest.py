@@ -83,6 +83,7 @@ class InterestingnessTest:
                 'may be uninitialized when used here [-Wconditional-uninitialized]' not in outputClang and
                 'warning: use of GNU ?: conditional expression extension, omitting middle operand' not in outputClang and
                 'warning: control may reach end of non-void function [-Wreturn-type]' not in outputClang and
+                'warning: control reaches end of non-void function [-Wreturn-type]' not in outputClang and
                 'warning: zero size arrays are an extension [-Wzero-length-array]' not in outputClang and
                 'excess elements in ' not in outputClang and
                 'warning: address of stack memory associated with local variable' not in outputClang and
