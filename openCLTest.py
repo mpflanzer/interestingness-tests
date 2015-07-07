@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, re, subprocess, signal
+import sys, os, re, subprocess, signal, argparse
 
 class InterestingnessTest:
     def __init__(self, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
@@ -106,6 +106,50 @@ class InterestingnessTest:
 
         return False
 
+    def isStaticallyValid(self):
+        # Make sure comment with dimensions is preserved
+        self.logProgress('Dimension')
+        m = re.match('//.* -g [0-9]+,[0-9]+,[0-9]+ -l [0-9]+,[0-9]+,[0-9]+', self.kernelContent)
+
+        if m == None:
+            return False
+
+        #grep -E '// Seed: [0-9]+' ${KERNEL} > /dev/null 2>&1 &&\
+
+        # Access to result only with get_linear_global_id()
+        self.logProgress('Result')
+        if not self.isValidResultAccess():
+            return False
+
+        # Must not change get_linear_global_id
+        # TODO: Improve
+        self.logProgress('Id')
+        if not re.search('return\s*\(\s*get_global_id\s*\(\s*2\s*\)\s*\*\s*get_global_size\s*\(\s*1\s*\)\s*\+\s*get_global_id\s*\(\s*1\s*\)\s*\)\s*\*\s*get_global_size\s*\(\s*0\s*\)\s*\+\s*get_global_id\s*\(\s*0\s*\)\s*;', self.kernelContent):
+            return False
+
+        # Prevent uninitialised structs
+        self.logProgress('Struct')
+        if not self.isValidStruct():
+            return False
+
+        # Run static analysis of the program
+        # Better support for uninitialised values
+        self.logProgress('Clang CL')
+        if not self.checkClang():
+            return False
+
+        self.logProgress('Clang Static Analyzer')
+        if not self.checkClangAnalyzer():
+            return False
+
+        return True
+
+#logProgress "Verify" && ${CREDUCE_TEST_TIMEOUT_TOOL} 60 ${GPUVERIFY_LAUNCHER} --local_size=1 --global_size=1 --stop-at-opt ${KERNEL} > out_verifier.txt 2>&1 && logOutput out_verifier.txt &&\
+#! grep 'warning: control reaches end of non-void function \[-Wreturn-type\]' out_verifier.txt > /dev/null 2>&1 &&\
+#! grep "warning: expected ';' at end of declaration list" out_verifier.txt > /dev/null 2>&1 &&\
+#! grep "uninitialized" out_verifier.txt > /dev/null 2>&1 &&\
+#! grep "type specifier missing" out_verifier.txt > /dev/null 2>&1 &&\
+
     def checkOclgrind(self):
         outputOclgrind = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
 
@@ -151,46 +195,8 @@ class InterestingnessTest:
         return True
 
     def isValidMiscompilation(self):
-        # Make sure comment with dimensions is preserved
-        self.logProgress('Dimension')
-        m = re.match('//.* -g [0-9]+,[0-9]+,[0-9]+ -l [0-9]+,[0-9]+,[0-9]+', self.kernelContent)
-
-        if m == None:
+        if not self.isStaticallyValid():
             return False
-
-        #grep -E '// Seed: [0-9]+' ${KERNEL} > /dev/null 2>&1 &&\
-
-        # Access to result only with get_linear_global_id()
-        self.logProgress('Result')
-        if not self.isValidResultAccess():
-            return False
-
-        # Must not change get_linear_global_id
-        # TODO: Improve
-        self.logProgress('Id')
-        if not re.search('return\s*\(\s*get_global_id\s*\(\s*2\s*\)\s*\*\s*get_global_size\s*\(\s*1\s*\)\s*\+\s*get_global_id\s*\(\s*1\s*\)\s*\)\s*\*\s*get_global_size\s*\(\s*0\s*\)\s*\+\s*get_global_id\s*\(\s*0\s*\)\s*;', self.kernelContent):
-            return False
-
-        # Prevent uninitialised structs
-        self.logProgress('Struct')
-        if not self.isValidStruct():
-            return False
-
-        # Run static analysis of the program
-        # Better support for uninitialised values
-        self.logProgress('Clang CL')
-        if not self.checkClang():
-            return False
-
-        self.logProgress('Clang Static Analyzer')
-        if not self.checkClangAnalyzer():
-            return False
-
-#logProgress "Verify" && ${CREDUCE_TEST_TIMEOUT_TOOL} 60 ${GPUVERIFY_LAUNCHER} --local_size=1 --global_size=1 --stop-at-opt ${KERNEL} > out_verifier.txt 2>&1 && logOutput out_verifier.txt &&\
-#! grep 'warning: control reaches end of non-void function \[-Wreturn-type\]' out_verifier.txt > /dev/null 2>&1 &&\
-#! grep "warning: expected ';' at end of declaration list" out_verifier.txt > /dev/null 2>&1 &&\
-#! grep "uninitialized" out_verifier.txt > /dev/null 2>&1 &&\
-#! grep "type specifier missing" out_verifier.txt > /dev/null 2>&1 &&\
 
         self.logProgress('Run Oclgrind')
         if not self.checkOclgrind():
@@ -200,6 +206,28 @@ class InterestingnessTest:
             return False
 
         self.logProgress('Different')
+
+        return True
+
+    def isCompilerCrashUnoptimised(self):
+        if not self.isStaticallyValid():
+            return False
+
+        self.logProgress('Run Oclgrind')
+        if not self.checkOclgrind():
+            return False
+
+        self.logProgress('Run optimised')
+        outputOptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
+        if not outputOptimised:
+            return False
+
+        self.logProgress('Run unoptimised')
+        outputUnoptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
+        if outputUnoptimised:
+            return False
+
+        self.logProgress('Crash unoptimised')
 
         return True
 
@@ -292,7 +320,16 @@ class WinOpenCLEnv(OpenCLEnv):
         return self.check_output([self.clLauncher] + args, timeLimit, env=oclgrindEnv)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Interestingness tests for OpenCL kernels.')
+    parser.add_argument('--test', choices=['miscompilation', 'crash-unoptimised'], default='miscompilation', help='Interestingness test')
+    parser.add_argument('kernel', nargs='?', help='Filename of the OpenCL kernel')
+
+    args = parser.parse_args()
+
     kernelName = os.environ.get('CREDUCE_TEST_KERNEL', 'CLProg.cl')
+
+    if args.kernel:
+        kernelName = args.kernel
 
     testPlatform = os.environ.get('CREDUCE_TEST_PLATFORM')
     if not testPlatform:
@@ -315,9 +352,6 @@ if __name__ == "__main__":
     if not libclcIncludePath:
         print('CREDUCE_TEST_LIBCLC_INCLUDE_PATH not defined!')
         sys.exit(1)
-
-    if len(sys.argv) > 1:
-        kernelName = sys.argv[1]
 
     outputFile = None
     if os.environ.get('CREDUCE_TEST_LOG'):
@@ -344,12 +378,17 @@ if __name__ == "__main__":
 
     kernelTest = InterestingnessTest(openCLEnv, kernelName, testPlatform, testDevice, outputFile=outputFile, progressFile=progressFile)
 
-    isMiscompilation = kernelTest.isValidMiscompilation()
+    if args.test == 'crash-unoptimised':
+        isSucessfulTest = kernelTest.isCompilerCrashUnoptimised()
+    elif args.test == 'miscompilation':
+        isSucessfulTest = kernelTest.isValidMiscompilation()
+    else:
+        isSucessfulTest = False
 
     if outputFile:
         outputFile.close()
 
-    if not isMiscompilation:
+    if not isSucessfulTest:
         sys.exit(1)
     else:
         sys.exit(0)
