@@ -1,6 +1,6 @@
 set CREDUCE_TEST_CLANG=C:\Program Files (x86)\LLVM\bin\clang.exe
-set CREDUCE_TEST_CLLAUNCHER=C:\Users\Administrator\Desktop\creduce_test\cl_launcher.exe
-set CREDUCE_TEST_LIBCLC_INCLUDE_PATH=C:\Users\Administrator\Desktop\creduce_test\include
+set CREDUCE_TEST_CLLAUNCHER=C:\Users\Administrator\Programs\cl_launcher.exe
+set CREDUCE_LIBCLC_INCLUDE_PATH=C:\Users\Administrator\Programming\libclc\generic\include
 
 set CREDUCE_TEST_PLATFORM=0
 set CREDUCE_TEST_DEVICE=0

@@ -42,10 +42,10 @@ if __name__ == '__main__':
         env['CREDUCE_TEST_CLANG'] = os.path.abspath(args.clang)
 
     if not args.libclc:
-        if not env.get('CREDUCE_TEST_LIBCLC_INCLUDE_PATH'):
-            parser.error('No libclc specified and CREDUCE_TEST_LIBCLC_INCLUDE_PATH not defined!')
+        if not env.get('CREDUCE_LIBCLC_INCLUDE_PATH'):
+            parser.error('No libclc specified and CREDUCE_LIBCLC_INCLUDE_PATH not defined!')
     else:
-        env['CREDUCE_TEST_LIBCLC_INCLUDE_PATH'] = os.path.abspath(args.libclc)
+        env['CREDUCE_LIBCLC_INCLUDE_PATH'] = os.path.abspath(args.libclc)
 
     if sys.platform == 'win32':
         if not args.oclgrind_platform:

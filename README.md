@@ -4,8 +4,8 @@ Interestingness tests for OpenCL kernels which can be used with C-Reduce
 ## Environment variables
 ```
 CREDUCE_TEST_CLANG=C:\Program Files (x86)\LLVM\bin\clang.exe
-CREDUCE_TEST_CLLAUNCHER=C:\Users\Administrator\Desktop\creduce_test\cl_launcher.exe
-CREDUCE_TEST_LIBCLC_INCLUDE_PATH=C:\Users\Administrator\Desktop\creduce_test\include
+CREDUCE_TEST_CLLAUNCHER=C:\Users\Administrator\Programs\cl_launcher.exe
+CREDUCE_LIBCLC_INCLUDE_PATH=C:\Users\Administrator\Programming\libclc\generic\include
 
 CLSMITH_PATH=/homes/mp3414/msc_project/clsmith
 

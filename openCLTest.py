@@ -352,9 +352,9 @@ if __name__ == "__main__":
 
     clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
 
-    libclcIncludePath = os.environ.get('CREDUCE_TEST_LIBCLC_INCLUDE_PATH')
+    libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
     if not libclcIncludePath:
-        print('CREDUCE_TEST_LIBCLC_INCLUDE_PATH not defined!')
+        print('CREDUCE_LIBCLC_INCLUDE_PATH not defined!')
         sys.exit(1)
 
     outputFile = None
