@@ -87,6 +87,8 @@ class InterestingnessTest:
                 'warning: zero size arrays are an extension [-Wzero-length-array]' not in outputClang and
                 'excess elements in ' not in outputClang and
                 'warning: address of stack memory associated with local variable' not in outputClang and
+                'warning: type specifier missing' not in outputClang and
+                "warning: expected ';' at end of declaration list" not in outputClang and
                 ' declaration specifier [-Wduplicate-decl-specifier]' not in outputClang):
                 return True
 
@@ -252,7 +254,9 @@ class OpenCLEnv:
         return self.check_output([self.clang] + oclArgs + diagArgs + args, timeLimit)
 
     def runClangStaticAnalyzer(self, args, timeLimit):
-        analysisArgs = ['-Xclang', '-analyze', '-Xclang', '-analyzer-checker', '-Xclang', 'alpha,core,security,unix']
+        #TODO: Maybe use scan-build?!
+        #analysisArgs = ['-Xclang', '-analyze', '-Xclang', '-analyzer-checker', '-Xclang', 'alpha,core,security,unix']
+        analysisArgs = ['--analyze', '-Xclang', '-analyzer-checker', '-Xclang', 'alpha,core,security,unix']
         return self.runClangCL(analysisArgs + args, timeLimit)
 
     def runOclgrindClLauncher(self, kernel, timeLimit, optimised = True):
