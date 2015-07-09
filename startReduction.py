@@ -2,6 +2,16 @@
 
 import argparse, os, sys, subprocess
 
+def which(cmd):
+    if os.access(cmd, os.F_OK):
+        return cmd
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        if os.access(os.path.join(path, cmd), os.F_OK):
+            return os.path.join(path, cmd)
+
+    return cmd
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start C-Reduce for OpenCL kernel.')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
@@ -61,7 +71,7 @@ if __name__ == '__main__':
             env['CREDUCE_TEST_OCLGRIND_DEVICE'] = args.oclgrind_device
 
     if sys.platform == 'win32':
-        creduceArgs = ['perl', '--', 'creduce.pl']
+        creduceArgs = ['perl', '--', which('creduce.pl')]
     else:
         creduceArgs = ['creduce']
 
