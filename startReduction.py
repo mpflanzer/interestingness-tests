@@ -19,7 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', '-d', help='Device under test')
     parser.add_argument('--cl-launcher', help='Path to cl_launcher application')
     parser.add_argument('--clang', help='Path to clang application')
-    parser.add_argument('--libclc', help='Path to libclc include directory')
+    parser.add_argument('--opencl-header', help='Path to OpenCL SPIR include directory')
     if sys.platform == 'win32':
         parser.add_argument('--oclgrind-platform', help='Platform for Oclgrind')
         parser.add_argument('--oclgrind-device', help='Device for Oclgrind')
@@ -51,11 +51,11 @@ if __name__ == '__main__':
     if args.clang:
         env['CREDUCE_TEST_CLANG'] = os.path.abspath(args.clang)
 
-    if not args.libclc:
-        if not env.get('CREDUCE_LIBCLC_INCLUDE_PATH'):
-            parser.error('No libclc specified and CREDUCE_LIBCLC_INCLUDE_PATH not defined!')
+    if not args.opencl_header:
+        if not env.get('CREDUCE_OPENCL_INCLUDE_PATH'):
+            parser.error('No opencl-header specified and CREDUCE_OPENCL_INCLUDE_PATH not defined!')
     else:
-        env['CREDUCE_LIBCLC_INCLUDE_PATH'] = os.path.abspath(args.libclc)
+        env['CREDUCE_OPENCL_INCLUDE_PATH'] = os.path.abspath(args.opencl_header)
 
     if sys.platform == 'win32':
         if not args.oclgrind_platform:

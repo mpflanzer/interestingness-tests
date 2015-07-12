@@ -44,15 +44,15 @@ if __name__ == '__main__':
 
         clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
 
-        libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
-        if not libclcIncludePath:
-            print('CREDUCE_LIBCLC_INCLUDE_PATH not defined!')
+        openclIncludePath = os.environ.get('CREDUCE_OPENCL_INCLUDE_PATH')
+        if not openclIncludePath:
+            print('CREDUCE_OPENCL_INCLUDE_PATH not defined!')
             sys.exit(1)
 
         if sys.platform == 'win32':
-            openCLEnv = openCLTest.WinOpenCLEnv(clLauncher, clang, libclcIncludePath, 0, 0)
+            openCLEnv = openCLTest.WinOpenCLEnv(clLauncher, clang, openclIncludePath, 0, 0)
         else:
-            openCLEnv = openCLTest.UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
+            openCLEnv = openCLTest.UnixOpenCLEnv(clLauncher, clang, openclIncludePath)
 
     origDir = os.getcwd()
 

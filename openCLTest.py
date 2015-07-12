@@ -234,10 +234,10 @@ class InterestingnessTest:
         return True
 
 class OpenCLEnv:
-    def __init__(self, clLauncher, clang, libclcIncludePath):
+    def __init__(self, clLauncher, clang, openclIncludePath):
         self.clLauncher = clLauncher
         self.clang = clang
-        self.libclcIncludePath = libclcIncludePath
+        self.openclIncludePath = openclIncludePath
 
         self.oclgrindPlatform = 0
         self.oclgrindDevice = 0
@@ -249,7 +249,7 @@ class OpenCLEnv:
             return None
 
     def runClangCL(self, args, timeLimit):
-        oclArgs = ['-x', 'cl', '-fno-builtin', '-I', self.libclcIncludePath, '-include', 'clc/clc.h', '-Dcl_clang_storage_class_specifiers']
+        oclArgs = ['-x', 'cl', '-fno-builtin', '-I', self.openclIncludePath, '-include', 'clc/clc.h', '-Dcl_clang_storage_class_specifiers']
         diagArgs = ['-g', '-c', '-Wall', '-Wextra', '-pedantic', '-Wconditional-uninitialized', '-Weverything', '-Wno-reserved-id-macro', '-fno-caret-diagnostics', '-fno-diagnostics-fixit-info', '-O1']
         return self.check_output([self.clang] + oclArgs + diagArgs + args, timeLimit)
 
@@ -293,8 +293,8 @@ class UnixOpenCLEnv(OpenCLEnv):
         return self.check_output(['oclgrind'] + oclgrindArgs + [self.clLauncher] + args, timeLimit)
 
 class WinOpenCLEnv(OpenCLEnv):
-    def __init__(self, clLauncher, clang, libclcIncludePath, oclgrindPlatform, oclgrindDevice):
-        super().__init__(clLauncher, clang, libclcIncludePath)
+    def __init__(self, clLauncher, clang, openclIncludePath, oclgrindPlatform, oclgrindDevice):
+        super().__init__(clLauncher, clang, openclIncludePath)
 
         self.oclgrindPlatform = oclgrindPlatform
         self.oclgrindDevice = oclgrindDevice
@@ -352,9 +352,9 @@ if __name__ == "__main__":
 
     clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
 
-    libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
-    if not libclcIncludePath:
-        print('CREDUCE_LIBCLC_INCLUDE_PATH not defined!')
+    openclIncludePath = os.environ.get('CREDUCE_OPENCL_INCLUDE_PATH')
+    if not openclIncludePath:
+        print('CREDUCE_OPENCL_INCLUDE_PATH not defined!')
         sys.exit(1)
 
     outputFile = None
@@ -376,9 +376,9 @@ if __name__ == "__main__":
             print('CREDUCE_TEST_OCLGRIND_DEVICE not defined!')
             sys.exit(1)
 
-        openCLEnv = WinOpenCLEnv(clLauncher, clang, libclcIncludePath, oclgrindPlatform, oclgrindDevice)
+        openCLEnv = WinOpenCLEnv(clLauncher, clang, openclIncludePath, oclgrindPlatform, oclgrindDevice)
     else:
-        openCLEnv = UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
+        openCLEnv = UnixOpenCLEnv(clLauncher, clang, openclIncludePath)
 
     kernelTest = InterestingnessTest(openCLEnv, kernelName, testPlatform, testDevice, outputFile=outputFile, progressFile=progressFile)
 
