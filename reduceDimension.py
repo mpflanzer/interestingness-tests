@@ -2,6 +2,19 @@
 
 import sys, os, re, openCLTest
 
+def which(cmd):
+    if sys.platform == 'win32' and '.' not in cmd:
+        cmd = cmd.append('.exe')
+
+    if os.access(cmd, os.F_OK):
+        return cmd
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        if os.access(os.path.join(path, cmd), os.F_OK):
+            return os.path.join(path, cmd)
+
+    return None
+
 class DimensionReducer:
     def __init__(self, kernelFile, kernelTest):
         self.kernelFile = open(kernelFile, 'r+')
@@ -76,17 +89,17 @@ if __name__ == '__main__':
         print('CREDUCE_TEST_DEVICE not defined!')
         sys.exit(1)
 
-    clLauncher = os.environ.get('CREDUCE_TEST_CLLAUNCHER')
-    if not clLauncher:
-        print('CREDUCE_TEST_CLLAUNCHER not defined!')
+    clLauncher = os.environ.get('CREDUCE_TEST_CLLAUNCHER', 'cl_launcher')
+    if not which('cl_launcher'):
+        print('cl_launcher not found and CREDUCE_TEST_CLLAUNCHER not defined!')
         sys.exit(1)
 
     clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
+    if not which(clang):
+        print('CREDUCE_TEST_CLANG not defined and clang not found!')
+        sys.exit(1)
 
     openclIncludePath = os.environ.get('CREDUCE_OPENCL_INCLUDE_PATH')
-    if not openclIncludePath:
-        print('CREDUCE_OPENCL_INCLUDE_PATH not defined!')
-        sys.exit(1)
 
     if sys.platform == 'win32':
         openCLEnv = openCLTest.WinOpenCLEnv(clLauncher, clang, openclIncludePath, 0, 0)

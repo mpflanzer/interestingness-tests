@@ -3,6 +3,9 @@
 import argparse, os, sys, subprocess
 
 def which(cmd):
+    if sys.platform == 'win32' and '.' not in cmd:
+        cmd = cmd.append('.exe')
+
     if os.access(cmd, os.F_OK):
         return cmd
 
@@ -10,7 +13,7 @@ def which(cmd):
         if os.access(os.path.join(path, cmd), os.F_OK):
             return os.path.join(path, cmd)
 
-    return cmd
+    return None
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start C-Reduce for OpenCL kernel.')
@@ -42,19 +45,21 @@ if __name__ == '__main__':
     else:
         env['CREDUCE_TEST_DEVICE'] = args.device
 
-    if not args.cl_launcher:
-        if not env.get('CREDUCE_TEST_CLLAUNCHER'):
-            parser.error('No cl-launcher specified and CREDUCE_TEST_CLLAUNCHER not defined!')
-    else:
+    if args.cl_launcher:
         env['CREDUCE_TEST_CLLAUNCHER'] = os.path.abspath(args.cl_launcher)
+
+    clLauncher = env.get('CREDUCE_TEST_CLLAUNCHER', 'cl_launcher')
+    if not which(clLauncher):
+        parser.error('No cl-launcher specified, CREDUCE_TEST_CLLAUNCHER not defined and cl_launcher not found!')
 
     if args.clang:
         env['CREDUCE_TEST_CLANG'] = os.path.abspath(args.clang)
 
-    if not args.opencl_header:
-        if not env.get('CREDUCE_OPENCL_INCLUDE_PATH'):
-            parser.error('No opencl-header specified and CREDUCE_OPENCL_INCLUDE_PATH not defined!')
-    else:
+    clang = env.get('CREDUCE_TEST_CLANG', 'clang')
+    if not which(clang):
+        parser.error('No clang specified, CREDUCE_TEST_CLANG not defined and clang not found!')
+
+    if args.opencl_header:
         env['CREDUCE_OPENCL_INCLUDE_PATH'] = os.path.abspath(args.opencl_header)
 
     if sys.platform == 'win32':
