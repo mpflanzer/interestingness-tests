@@ -363,7 +363,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     clLauncher = os.environ.get('CREDUCE_TEST_CLLAUNCHER', 'cl_launcher')
-    if not which('cl_launcher'):
+    if not which(clLauncher):
         print('cl_launcher not found and CREDUCE_TEST_CLLAUNCHER not defined!')
         sys.exit(1)
 
