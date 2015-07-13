@@ -4,7 +4,7 @@ import sys, os, re, openCLTest
 
 def which(cmd):
     if sys.platform == 'win32' and '.' not in cmd:
-        cmd = cmd.append('.exe')
+        cmd += '.exe'
 
     if os.access(cmd, os.F_OK):
         return cmd

@@ -4,7 +4,7 @@ import sys, os, re, subprocess, signal, argparse
 
 def which(cmd):
     if sys.platform == 'win32' and '.' not in cmd:
-        cmd = cmd.append('.exe')
+        cmd += '.exe'
 
     if os.access(cmd, os.F_OK):
         return cmd
@@ -251,7 +251,7 @@ class OpenCLEnv:
         self.clLauncher = clLauncher
         self.clang = clang
 
-        if not self.openclIncludePath:
+        if not openclIncludePath:
             if sys.platform == 'win32':
                 self.openclIncludePath = r'C:\Program Files (x86)\creduce\include'
             else:
@@ -269,7 +269,7 @@ class OpenCLEnv:
             return None
 
     def runClangCL(self, args, timeLimit):
-        oclArgs = ['-x', 'cl', '-fno-builtin', '-I', self.openclIncludePath, '-include', 'clc/clc.h', '-Dcl_clang_storage_class_specifiers']
+        oclArgs = ['-x', 'cl', '-fno-builtin', '-I', self.openclIncludePath, '-include', 'opencl_spir_no_double.h', '-D__SPIR32__']
         diagArgs = ['-g', '-c', '-Wall', '-Wextra', '-pedantic', '-Wconditional-uninitialized', '-Weverything', '-Wno-reserved-id-macro', '-fno-caret-diagnostics', '-fno-diagnostics-fixit-info', '-O1']
         return self.check_output([self.clang] + oclArgs + diagArgs + args, timeLimit)
 
@@ -323,6 +323,7 @@ class WinOpenCLEnv(OpenCLEnv):
         try:
             proc = subprocess.Popen(args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP, env=env)
             output, _ = proc.communicate(timeout=timeLimit)
+            print(output)
             if proc.returncode == 0:
                 return output
         except subprocess.SubprocessError:
