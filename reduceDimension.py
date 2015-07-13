@@ -99,12 +99,12 @@ if __name__ == '__main__':
         print('CREDUCE_TEST_CLANG not defined and clang not found!')
         sys.exit(1)
 
-    openclIncludePath = os.environ.get('CREDUCE_OPENCL_INCLUDE_PATH')
+    libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
 
     if sys.platform == 'win32':
-        openCLEnv = openCLTest.WinOpenCLEnv(clLauncher, clang, openclIncludePath, 0, 0)
+        openCLEnv = openCLTest.WinOpenCLEnv(clLauncher, clang, libclcIncludePath, 0, 0)
     else:
-        openCLEnv = openCLTest.UnixOpenCLEnv(clLauncher, clang, openclIncludePath)
+        openCLEnv = openCLTest.UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
 
     kernelTest = openCLTest.InterestingnessTest(openCLEnv, kernelFile, testPlatform, testDevice)
     dimReducer = DimensionReducer(kernelFile, kernelTest)

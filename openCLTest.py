@@ -247,17 +247,10 @@ class InterestingnessTest:
         return True
 
 class OpenCLEnv:
-    def __init__(self, clLauncher, clang, openclIncludePath):
+    def __init__(self, clLauncher, clang, libclcIncludePath):
         self.clLauncher = clLauncher
         self.clang = clang
-
-        if not openclIncludePath:
-            if sys.platform == 'win32':
-                self.openclIncludePath = r'C:\Program Files (x86)\creduce\include'
-            else:
-                self.openclIncludePath = r'\usr\include'
-        else:
-            self.openclIncludePath = openclIncludePath
+        self.libclcIncludePath = libclcIncludePath
 
         self.oclgrindPlatform = 0
         self.oclgrindDevice = 0
@@ -269,7 +262,11 @@ class OpenCLEnv:
             return None
 
     def runClangCL(self, args, timeLimit):
-        oclArgs = ['-x', 'cl', '-fno-builtin', '-I', self.openclIncludePath, '-include', 'opencl_spir_no_double.h', '-D__SPIR32__']
+        oclArgs = ['-x', 'cl', '-fno-builtin', '-include', 'clc/clc.h', '-Dcl_clang_storage_class_specifiers']
+        
+        if self.libclcIncludePath:
+            oclArgs.extend(['-I', self.libclcIncludePath])
+        
         diagArgs = ['-g', '-c', '-Wall', '-Wextra', '-pedantic', '-Wconditional-uninitialized', '-Weverything', '-Wno-reserved-id-macro', '-fno-caret-diagnostics', '-fno-diagnostics-fixit-info', '-O1']
         return self.check_output([self.clang] + oclArgs + diagArgs + args, timeLimit)
 
@@ -313,8 +310,8 @@ class UnixOpenCLEnv(OpenCLEnv):
         return self.check_output(['oclgrind'] + oclgrindArgs + [self.clLauncher] + args, timeLimit)
 
 class WinOpenCLEnv(OpenCLEnv):
-    def __init__(self, clLauncher, clang, openclIncludePath, oclgrindPlatform, oclgrindDevice):
-        super().__init__(clLauncher, clang, openclIncludePath)
+    def __init__(self, clLauncher, clang, libclcIncludePath, oclgrindPlatform, oclgrindDevice):
+        super().__init__(clLauncher, clang, libclcIncludePath)
 
         self.oclgrindPlatform = oclgrindPlatform
         self.oclgrindDevice = oclgrindDevice
@@ -323,7 +320,6 @@ class WinOpenCLEnv(OpenCLEnv):
         try:
             proc = subprocess.Popen(args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP, env=env)
             output, _ = proc.communicate(timeout=timeLimit)
-            print(output)
             if proc.returncode == 0:
                 return output
         except subprocess.SubprocessError:
@@ -376,7 +372,7 @@ if __name__ == "__main__":
         print('CREDUCE_TEST_CLANG not defined and clang not found!')
         sys.exit(1)
 
-    openclIncludePath = os.environ.get('CREDUCE_OPENCL_INCLUDE_PATH')
+    libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
 
     outputFile = None
     if os.environ.get('CREDUCE_TEST_LOG'):
@@ -397,9 +393,9 @@ if __name__ == "__main__":
             print('CREDUCE_TEST_OCLGRIND_DEVICE not defined!')
             sys.exit(1)
 
-        openCLEnv = WinOpenCLEnv(clLauncher, clang, openclIncludePath, oclgrindPlatform, oclgrindDevice)
+        openCLEnv = WinOpenCLEnv(clLauncher, clang, libclcIncludePath, oclgrindPlatform, oclgrindDevice)
     else:
-        openCLEnv = UnixOpenCLEnv(clLauncher, clang, openclIncludePath)
+        openCLEnv = UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
 
     kernelTest = InterestingnessTest(openCLEnv, kernelName, testPlatform, testDevice, outputFile=outputFile, progressFile=progressFile)
 

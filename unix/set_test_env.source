@@ -1,6 +1,6 @@
 export CREDUCE_TEST_CLANG=/vol/bitbucket/mp3414/install/bin/clang
 export CREDUCE_TEST_CLLAUNCHER=/homes/mp3414/msc_project/clsmith/cl_launcher
-#export CREDUCE_OPENCL_INCLUDE_PATH=
+export CREDUCE_LIBCLC_INCLUDE_PATH=/vol/bitbucket/mp3414/libclc/generic/include
 
 export CLSMITH_PATH=/homes/mp3414/msc_project/clsmith
 

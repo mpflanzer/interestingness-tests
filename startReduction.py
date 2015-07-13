@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', '-d', help='Device under test')
     parser.add_argument('--cl-launcher', help='Path to cl_launcher application')
     parser.add_argument('--clang', help='Path to clang application')
-    parser.add_argument('--opencl-header', help='Path to OpenCL SPIR include directory')
+    parser.add_argument('--libclc', help='Path to libclc include directory')
     if sys.platform == 'win32':
         parser.add_argument('--oclgrind-platform', help='Platform for Oclgrind')
         parser.add_argument('--oclgrind-device', help='Device for Oclgrind')
@@ -59,8 +59,8 @@ if __name__ == '__main__':
     if not which(clang):
         parser.error('No clang specified, CREDUCE_TEST_CLANG not defined and clang not found!')
 
-    if args.opencl_header:
-        env['CREDUCE_OPENCL_INCLUDE_PATH'] = os.path.abspath(args.opencl_header)
+    if args.libclc:
+        env['CREDUCE_LIBCLC_INCLUDE_PATH'] = os.path.abspath(args.libclc)
 
     if sys.platform == 'win32':
         if not args.oclgrind_platform:
