@@ -39,7 +39,7 @@ if __name__ == '__main__':
             print('CLSMITH_PATH not defined!')
             sys.exit(1)
 
-    if args.stopAfter != 'generate':
+    if args.stopAfter not in ['generate', 'preprocess']:
         testPlatform = os.environ.get('CREDUCE_TEST_PLATFORM')
         if not testPlatform:
             print('CREDUCE_TEST_PLATFORM not defined!')
@@ -54,18 +54,20 @@ if __name__ == '__main__':
         if not which(clLauncher):
             print('CREDUCE_TEST_CLLAUNCHER not defined and cl_launcher not found!')
             sys.exit(1)
+    else:
+        clLauncher = None
 
-        clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
-        if not which(clang):
-            print('CREDUCE_TEST_CLANG not defined and clang not found!')
-            sys.exit(1)
+    clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
+    if not which(clang):
+        print('CREDUCE_TEST_CLANG not defined and clang not found!')
+        sys.exit(1)
 
-        libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
+    libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
 
-        if sys.platform == 'win32':
-            openCLEnv = openCLTest.WinOpenCLEnv(clLauncher, clang, libclcIncludePath, 0, 0)
-        else:
-            openCLEnv = openCLTest.UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
+    if sys.platform == 'win32':
+        openCLEnv = openCLTest.WinOpenCLEnv(clLauncher, clang, libclcIncludePath, 0, 0)
+    else:
+        openCLEnv = openCLTest.UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
 
     origDir = os.getcwd()
 
