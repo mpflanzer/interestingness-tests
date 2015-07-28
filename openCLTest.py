@@ -43,42 +43,6 @@ class InterestingnessTest:
 
         return int(m.group(1)) * int(m.group(2)) * int(m.group(3))
 
-    def isValidStruct(self):
-        # Get name of struct that gets assigned
-        # It is always the first struct in the entry kernel
-        m = re.search('struct\s+S\d+\s+c_(\d+)\s*;', self.kernelContent)
-
-        if m == None:
-            self.logProgress('   -> No struct')
-            return True
-
-        structNumber = m.group(1)
-
-        # Check if the pointer to the struct is initialised
-        m = re.search('struct\s+S\d+(:?\s*\*\s+|\s+\*\s*)p_\d+\s*=\s*&\s*c_' + structNumber + '\s*;', self.kernelContent)
-
-        if m == None:
-            self.logProgress('   -> Uninitialised pointer')
-            return False
-
-        # Check if there is an assigment for that struct
-        m = re.search('c_' + structNumber + '\s*=\s*c_(\d+)\s*;', self.kernelContent)
-
-        if m == None:
-            self.logProgress('   -> No assignment')
-            return False
-
-        structNumber = m.group(1)
-
-        # Check if assigned value has been initialised
-        m = re.search('struct\s+S\d+\s+c_' + structNumber + '\s*=\s*{', self.kernelContent)
-
-        if m == None:
-            self.logProgress('   -> Uninitialised value')
-            return False
-
-        return True
-
     def isValidResultAccess(self):
         return not re.search('result\s*\[', self.kernelContent) or re.search('result\s*\[\s*get_linear_global_id\s*\(\s*\)\s*\]', self.kernelContent)
 
@@ -138,13 +102,9 @@ class InterestingnessTest:
 
         # Must not change get_linear_global_id
         # TODO: Improve
+        # TODO: Do I need this or will Oclgrind check it too
         self.logProgress('Id')
         if not re.search('return\s*\(\s*get_global_id\s*\(\s*2\s*\)\s*\*\s*get_global_size\s*\(\s*1\s*\)\s*\+\s*get_global_id\s*\(\s*1\s*\)\s*\)\s*\*\s*get_global_size\s*\(\s*0\s*\)\s*\+\s*get_global_id\s*\(\s*0\s*\)\s*;', self.kernelContent):
-            return False
-
-        # Prevent uninitialised structs
-        self.logProgress('Struct')
-        if not self.isValidStruct():
             return False
 
         # Run static analysis of the program
@@ -159,38 +119,14 @@ class InterestingnessTest:
 
         return True
 
-#logProgress "Verify" && ${CREDUCE_TEST_TIMEOUT_TOOL} 60 ${GPUVERIFY_LAUNCHER} --local_size=1 --global_size=1 --stop-at-opt ${KERNEL} > out_verifier.txt 2>&1 && logOutput out_verifier.txt &&\
-#! grep 'warning: control reaches end of non-void function \[-Wreturn-type\]' out_verifier.txt > /dev/null 2>&1 &&\
-#! grep "warning: expected ';' at end of declaration list" out_verifier.txt > /dev/null 2>&1 &&\
-#! grep "uninitialized" out_verifier.txt > /dev/null 2>&1 &&\
-#! grep "type specifier missing" out_verifier.txt > /dev/null 2>&1 &&\
-
     def checkOclgrind(self):
         outputOclgrind = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
 
         if outputOclgrind:
             self.logOutput(outputOclgrind)
-
-            if ('Work-group divergence detected' not in outputOclgrind and
-                'Invalid memory load' not in outputOclgrind and
-                'Invalid memory store' not in outputOclgrind and
-                'Unaligned address on ' not in outputOclgrind and
-                'exceeds static array size' not in outputOclgrind and
-                'Invalid read from write-only buffer' not in outputOclgrind and
-                'Invalid write to read-only buffer' not in outputOclgrind and
-                'Invalid read of size' not in outputOclgrind and
-                'Invalid write of size' not in outputOclgrind and
-                ' data race at ' not in outputOclgrind and
-                #'Uninitialized value read from ' not in outputOclgrind and
-                'OCLGRIND FATAL ERROR ' not in outputOclgrind and
-                self.checkOclgrindUninitialised(outputOclgrind)):
-                return True
+            return True
 
         return False
-
-    def checkOclgrindUninitialised(self, outputOclgrind):
-        countUninitialisedWarnings = outputOclgrind.count('Uninitialized value read from private memory address')
-        return countUninitialisedWarnings == 0 or countUninitialisedWarnings == self.getWorkItemCount()
 
     def isMiscompiled(self):
         self.logProgress('Run optimised')
@@ -209,12 +145,18 @@ class InterestingnessTest:
 
         return True
 
-    def isValidMiscompilation(self):
+    def isValid(self):
         if not self.isStaticallyValid():
             return False
 
         self.logProgress('Run Oclgrind')
         if not self.checkOclgrind():
+            return False
+
+        return True
+
+    def isValidMiscompilation(self):
+        if not self.isValid():
             return False
 
         if not self.isMiscompiled():
@@ -263,10 +205,10 @@ class OpenCLEnv:
 
     def runClangCL(self, args, timeLimit):
         oclArgs = ['-x', 'cl', '-fno-builtin', '-include', 'clc/clc.h', '-Dcl_clang_storage_class_specifiers']
-        
+
         if self.libclcIncludePath:
             oclArgs.extend(['-I', self.libclcIncludePath])
-        
+
         diagArgs = ['-g', '-c', '-Wall', '-Wextra', '-pedantic', '-Wconditional-uninitialized', '-Weverything', '-Wno-reserved-id-macro', '-fno-caret-diagnostics', '-fno-diagnostics-fixit-info', '-O1']
         return self.check_output([self.clang] + oclArgs + diagArgs + args, timeLimit)
 
@@ -301,7 +243,7 @@ class UnixOpenCLEnv(OpenCLEnv):
         return None
 
     def runOclgrindClLauncher(self, kernel, timeLimit, optimised = True):
-        oclgrindArgs = ['-Wall', '--uninitialized', '--data-races']
+        oclgrindArgs = ['-Wall', '--memcheck-uninitialized', '--data-races', '--stop-errors', '1']
         args = ['-p', str(self.oclgrindPlatform), '-d', str(self.oclgrindDevice), '-f', kernel]
 
         if not optimised:
@@ -331,8 +273,9 @@ class WinOpenCLEnv(OpenCLEnv):
     def runOclgrindClLauncher(self, kernel, timeLimit, optimised = True):
         oclgrindEnv = os.environ
         oclgrindEnv['OCLGRIND_DIAGNOSTIC_OPTIONS'] = '-Wall'
-        oclgrindEnv['OCLGRIND_UNINITIALIZED'] = '1'
+        oclgrindEnv['OCLGRIND_MEMCHECK_UNINITIALIZED'] = '1'
         oclgrindEnv['OCLGRIND_DATA_RACES'] = '1'
+        oclgrindEnv['OCLGRIND_STOP_ERRORS'] = '1'
         args = ['-p', str(self.oclgrindPlatform), '-d', str(self.oclgrindDevice), '-f', kernel]
 
         if not optimised:
@@ -342,7 +285,7 @@ class WinOpenCLEnv(OpenCLEnv):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Interestingness tests for OpenCL kernels.')
-    parser.add_argument('--test', choices=['miscompilation', 'crash-unoptimised'], default='miscompilation', help='Interestingness test')
+    parser.add_argument('--test', choices=['miscompilation', 'crash-unoptimised', 'valid'], default='miscompilation', help='Interestingness test')
     parser.add_argument('kernel', nargs='?', help='Filename of the OpenCL kernel')
 
     args = parser.parse_args()
@@ -362,15 +305,21 @@ if __name__ == "__main__":
         print('CREDUCE_TEST_DEVICE not defined!')
         sys.exit(1)
 
-    clLauncher = os.environ.get('CREDUCE_TEST_CLLAUNCHER', 'cl_launcher')
+    clLauncher = os.environ.get('CREDUCE_TEST_CLLAUNCHER', os.path.abspath('./cl_launcher'))
     if not which(clLauncher):
-        print('cl_launcher not found and CREDUCE_TEST_CLLAUNCHER not defined!')
-        sys.exit(1)
+        clLauncher = os.path.basename(clLauncher)
 
-    clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
+        if not which(clLauncher):
+            print('cl_launcher not found and CREDUCE_TEST_CLLAUNCHER not defined!')
+            sys.exit(1)
+
+    clang = os.environ.get('CREDUCE_TEST_CLANG', os.path.abspath('./clang'))
     if not which(clang):
-        print('CREDUCE_TEST_CLANG not defined and clang not found!')
-        sys.exit(1)
+        clang = os.path.basename(clang)
+
+        if not which(clang):
+            print('CREDUCE_TEST_CLANG not defined and clang not found!')
+            sys.exit(1)
 
     libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
 
@@ -403,6 +352,8 @@ if __name__ == "__main__":
         isSucessfulTest = kernelTest.isCompilerCrashUnoptimised()
     elif args.test == 'miscompilation':
         isSucessfulTest = kernelTest.isValidMiscompilation()
+    elif args.test == 'valid':
+        isSucessfulTest = kernelTest.isValid()
     else:
         isSucessfulTest = False
 

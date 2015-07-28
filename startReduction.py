@@ -48,16 +48,22 @@ if __name__ == '__main__':
     if args.cl_launcher:
         env['CREDUCE_TEST_CLLAUNCHER'] = os.path.abspath(args.cl_launcher)
 
-    clLauncher = env.get('CREDUCE_TEST_CLLAUNCHER', 'cl_launcher')
+    clLauncher = env.get('CREDUCE_TEST_CLLAUNCHER', os.path.abspath('./cl_launcher'))
     if not which(clLauncher):
-        parser.error('No cl-launcher specified, CREDUCE_TEST_CLLAUNCHER not defined and cl_launcher not found!')
+        clLauncher = os.path.basename(clLauncher)
+
+        if not which(clLauncher):
+            parser.error('No cl-launcher specified, CREDUCE_TEST_CLLAUNCHER not defined and cl_launcher not found!')
 
     if args.clang:
         env['CREDUCE_TEST_CLANG'] = os.path.abspath(args.clang)
 
-    clang = env.get('CREDUCE_TEST_CLANG', 'clang')
+    clang = env.get('CREDUCE_TEST_CLANG', os.path.abspath('./clang'))
     if not which(clang):
-        parser.error('No clang specified, CREDUCE_TEST_CLANG not defined and clang not found!')
+        clang = os.path.basename(clang)
+
+        if not which(clang):
+            parser.error('No clang specified, CREDUCE_TEST_CLANG not defined and clang not found!')
 
     if args.libclc:
         env['CREDUCE_LIBCLC_INCLUDE_PATH'] = os.path.abspath(args.libclc)

@@ -50,17 +50,23 @@ if __name__ == '__main__':
             print('CREDUCE_TEST_DEVICE not defined!')
             sys.exit(1)
 
-        clLauncher = os.environ.get('CREDUCE_TEST_CLLAUNCHER', 'cl_launcher')
+        clLauncher = os.environ.get('CREDUCE_TEST_CLLAUNCHER', os.path.abspath('./cl_launcher'))
         if not which(clLauncher):
-            print('CREDUCE_TEST_CLLAUNCHER not defined and cl_launcher not found!')
-            sys.exit(1)
+            clLauncher = os.path.basename(clLauncher)
+
+            if not which(clLauncher):
+                print('CREDUCE_TEST_CLLAUNCHER not defined and cl_launcher not found!')
+                sys.exit(1)
     else:
         clLauncher = None
 
-    clang = os.environ.get('CREDUCE_TEST_CLANG', 'clang')
+    clang = os.environ.get('CREDUCE_TEST_CLANG', os.path.abspath('./clang'))
     if not which(clang):
-        print('CREDUCE_TEST_CLANG not defined and clang not found!')
-        sys.exit(1)
+        clang = os.path.basename(clang)
+
+        if not which(clang):
+            print('CREDUCE_TEST_CLANG not defined and clang not found!')
+            sys.exit(1)
 
     libclcIncludePath = os.environ.get('CREDUCE_LIBCLC_INCLUDE_PATH')
 
