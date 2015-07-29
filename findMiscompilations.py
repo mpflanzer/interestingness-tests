@@ -38,7 +38,7 @@ if __name__ == '__main__':
     reduceGroup = parser.add_mutually_exclusive_group()
     reduceGroup.add_argument('--reduce-dimension', dest='reduceDimension', action='store_const', const=1, help='Reduce dimensions of the kernels')
     reduceGroup.add_argument('--reduce-dimension-unchecked', dest='reduceDimension', action='store_const', const=2, help='Reduce dimensions of the kernels (unchecked)')
-    parser.add_argument('--reduce', nargs=1, metavar='TEST_SCRIPT', action='store', help='Start reduction of the kernels')
+    parser.add_argument('--reduce', action='store_true', help='Start reduction of the kernels')
     parser.add_argument('--test', action='store', choices=InterestingnessTest.availableTests, default='miscompiled', help='Criterion which the kernel has to fulfill')
     parser.add_argument('--output', help='Output directory')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
