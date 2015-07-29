@@ -53,22 +53,23 @@ class DimensionReducer:
         self.kernelFile.write(self.kernelContent)
         self.kernelFile.flush()
 
-    def reduce(self):
+    def reduce(self, unchecked = False):
         newGlobalDim = (1,1,1)
         newLocalDim = (1,1,1)
 
         self.rewriteDimensions(newGlobalDim, newLocalDim)
 
-        while(not self.kernelTest.isMiscompiled()):
-            (gDim, lDim) = self.updateDimensions(newGlobalDim, newLocalDim)
+        if not unchecked:
+            while not self.kernelTest.runTest():
+                (gDim, lDim) = self.updateDimensions(newGlobalDim, newLocalDim)
 
-            if gDim == newGlobalDim and lDim == newLocalDim:
-                return None
-            else:
-                newGlobalDim = gDim
-                newLocalDim = lDim
+                if gDim == newGlobalDim and lDim == newLocalDim:
+                    return None
+                else:
+                    newGlobalDim = gDim
+                    newLocalDim = lDim
 
-            self.rewriteDimensions(newGlobalDim, newLocalDim)
+                self.rewriteDimensions(newGlobalDim, newLocalDim)
 
         return (newGlobalDim, newLocalDim)
 

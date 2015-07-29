@@ -16,7 +16,10 @@ def which(cmd):
     return None
 
 class InterestingnessTest:
-    def __init__(self, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
+    availableTests = ['miscompilation', 'crash-unoptimised', 'valid', 'oclgrind-miscompilation', 'oclgrind-optimised']
+
+    def __init__(self, test, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
+        self.test = test
         self.openCLEnv = openCLEnv
         self.kernelName = kernelName
         self.testPlatform = testPlatform
@@ -145,6 +148,23 @@ class InterestingnessTest:
 
         return True
 
+    def isMiscompiledOclgrind(self):
+        self.logProgress('Run optimised')
+        outputOptimised = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300)
+        if not outputOptimised:
+            return False
+
+        self.logProgress('Run unoptimised')
+        outputUnoptimised = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
+        if not outputUnoptimised:
+            return False
+
+        self.logProgress('Diff')
+        if outputOptimised == outputUnoptimised:
+            return False
+
+        return True
+
     def isValid(self):
         if not self.isStaticallyValid():
             return False
@@ -160,6 +180,17 @@ class InterestingnessTest:
             return False
 
         if not self.isMiscompiled():
+            return False
+
+        self.logProgress('Different')
+
+        return True
+
+    def isValidMiscompilationOclgrind(self):
+        if not self.isValid():
+            return False
+
+        if not self.isMiscompiledOclgrind():
             return False
 
         self.logProgress('Different')
@@ -187,6 +218,20 @@ class InterestingnessTest:
         self.logProgress('Crash unoptimised')
 
         return True
+
+    def runTest(self):
+        if self.test == 'crash-unoptimised':
+            return self.isCompilerCrashUnoptimised()
+        elif self.test == 'miscompilation':
+            return self.isValidMiscompilation()
+        elif self.test == 'oclgrind-miscompilation':
+            return self.isValidMiscompilationOclgrind()
+        elif self.test == 'oclgrind-optimised':
+            return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300) is not None
+        elif self.test == 'valid':
+            return self.isValid()
+
+        return False
 
 class OpenCLEnv:
     def __init__(self, clLauncher, clang, libclcIncludePath):
@@ -285,7 +330,7 @@ class WinOpenCLEnv(OpenCLEnv):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Interestingness tests for OpenCL kernels.')
-    parser.add_argument('--test', choices=['miscompilation', 'crash-unoptimised', 'valid'], default='miscompilation', help='Interestingness test')
+    parser.add_argument('--test', choices=InterestingnessTest.availableTests, default='miscompiled', help='Interestingness test')
     parser.add_argument('kernel', nargs='?', help='Filename of the OpenCL kernel')
 
     args = parser.parse_args()
@@ -346,21 +391,13 @@ if __name__ == "__main__":
     else:
         openCLEnv = UnixOpenCLEnv(clLauncher, clang, libclcIncludePath)
 
-    kernelTest = InterestingnessTest(openCLEnv, kernelName, testPlatform, testDevice, outputFile=outputFile, progressFile=progressFile)
-
-    if args.test == 'crash-unoptimised':
-        isSucessfulTest = kernelTest.isCompilerCrashUnoptimised()
-    elif args.test == 'miscompilation':
-        isSucessfulTest = kernelTest.isValidMiscompilation()
-    elif args.test == 'valid':
-        isSucessfulTest = kernelTest.isValid()
-    else:
-        isSucessfulTest = False
+    kernelTest = InterestingnessTest(args.test, openCLEnv, kernelName, testPlatform, testDevice, outputFile=outputFile, progressFile=progressFile)
+    isSuccessfulTest = kernelTest.runTest()
 
     if outputFile:
         outputFile.close()
 
-    if not isSucessfulTest:
+    if not isSuccessfulTest:
         sys.exit(1)
     else:
         sys.exit(0)
