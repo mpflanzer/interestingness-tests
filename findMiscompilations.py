@@ -40,6 +40,7 @@ if __name__ == '__main__':
     reduceGroup.add_argument('--reduce-dimension-unchecked', dest='reduceDimension', action='store_const', const=2, help='Reduce dimensions of the kernels (unchecked)')
     parser.add_argument('--reduce', action='store_true', help='Start reduction of the kernels')
     parser.add_argument('--test', action='store', choices=InterestingnessTest.availableTests, default='miscompiled', help='Criterion which the kernel has to fulfill')
+    parser.add_argument('--modes', nargs='+', action='store', choices=['atomic_reductions', 'atomics', 'barriers', 'divergence', 'fake_divergence', 'group_divergence', 'inter_thread_comm', 'vectors'], help='CLsmith modes')
     parser.add_argument('--output', help='Output directory')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
 
@@ -169,7 +170,12 @@ if __name__ == '__main__':
         # Generate kernel if desired
         if args.generate:
             try:
-                openCLEnv.check_output([clSmithTool], timeLimit)
+                clSmithArgs = [clSmithTool]
+
+                if args.modes:
+                    clSmithArgs.extend(['--' + mode for mode in args.modes])
+
+                openCLEnv.check_output(clSmithArgs, timeLimit)
             except subprocess.SubprocessError:
                 print('-> aborted generation')
                 continue
