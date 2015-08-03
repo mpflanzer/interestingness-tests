@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, tempfile, os, sys, subprocess, shutil, fileinput, re
+import argparse, tempfile, os, sys, subprocess, shutil, fileinput, re, pathlib
 import openCLTest
 from openCLTest import *
 import reduceDimension
@@ -28,9 +28,11 @@ def removePreprocessorComments(kernelName):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Optionally generate, run and compare OpenCL kernels.')
     inputGroup = parser.add_mutually_exclusive_group(required=True)
-    inputGroup.add_argument('--generate', type=int, metavar='N', help='Generate N kernels on the fly')
+    inputGroup.add_argument('--generate', type=int, metavar='NUM', help='Generate NUM kernels on the fly')
     inputGroup.add_argument('--kernel-dir', dest='kernelDir', help='OpenCL kernel directory')
     inputGroup.add_argument('--kernels', metavar='KERNEL', nargs='+', help='OpenCL kernels')
+    parser.add_argument('--exclude-file', dest='excludeFile', help='File containing a list of kernels that should be ignored')
+    parser.add_argument('-n', metavar='NUM', type=int, help='Number of parallel interestingness tests per kernel')
     processGroup = parser.add_mutually_exclusive_group()
     processGroup.add_argument('--preprocess', action='store_true', help='Preprocess kernels')
     processGroup.add_argument('--preprocessed', action='store_true', help='Kernels are already preprocessed')
@@ -43,6 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--modes', nargs='+', action='store', choices=['atomic_reductions', 'atomics', 'barriers', 'divergence', 'fake_divergence', 'group_divergence', 'inter_thread_comm', 'vectors'], help='CLsmith modes')
     parser.add_argument('--output', help='Output directory')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
+    parser.add_argument('--log', help='Log completed kernels')
 
     args = parser.parse_args()
     timeLimit = 300
@@ -117,28 +120,44 @@ if __name__ == '__main__':
 
     origDir = os.getcwd()
 
-    # Get kernel filenames
-    if args.generate:
-        inputKernels = ['CLProg_%d.cl' % i for i in range(0, args.generate)]
-        countKernels = args.generate
-        clSmithTool = os.path.join(clSmithPath, 'CLSmith')
-    elif args.kernels:
-        inputKernels = [os.path.join(origDir, inputKernel) for inputKernel in args.kernels]
-        countKernels = len(inputKernels)
-    elif args.kernelDir:
-        kernelDir = os.path.join(origDir, args.kernelDir)
-        inputKernels = [os.path.join(kernelDir, inputKernel) for inputKernel in os.listdir(kernelDir) if os.path.isfile(os.path.join(kernelDir, inputKernel))]
-        countKernels = len(inputKernels)
-
     # Create output directory
     if not args.output:
-        outputDir = tempfile.mkdtemp(prefix='kernels.', dir='.')
+        outputDir = os.path.abspath(tempfile.mkdtemp(prefix='kernels.', dir='.'))
     else:
-        outputDir = args.output
+        outputDir = os.path.abspath(args.output)
 
     if not os.path.exists(outputDir):
         os.mkdir(outputDir)
 
+    # Get exluded files
+    excludedFiles = [];
+    if args.excludeFile and os.path.exists(args.excludeFile):
+        with open(args.excludeFile, 'r') as f:
+            excludedFiles.extend(f.read().splitlines())
+
+    # Get kernel filenames
+    if args.generate:
+        inputKernels = [os.path.join(outputDir, 'CLProg_%d.cl' % i) for i in range(0, args.generate)]
+        countKernels = args.generate
+        clSmithTool = os.path.join(clSmithPath, 'CLSmith')
+    elif args.kernels:
+        inputKernels = [os.path.join(origDir, inputKernel) for inputKernel in args.kernels if os.path.basename(inputKernel) not in excludedFiles]
+        countKernels = len(inputKernels)
+    elif args.kernelDir:
+        kernelDir = os.path.join(origDir, args.kernelDir)
+        p = pathlib.Path(kernelDir)
+        inputKernels = [str(inputKernel) for inputKernel in p.glob('*.cl') if inputKernel.name not in excludedFiles]
+        countKernels = len(inputKernels)
+
+    # Sort kernels
+    alpha_num_key = lambda s : [int(c) if c.isdigit() else c for c in re.split('([0-9]+)', s)]
+    inputKernels.sort(key=alpha_num_key)
+
+    # Log completed kernels
+    if args.log:
+        logFile = open(os.path.abspath(args.log), 'a')
+
+    # Change to output directory
     os.chdir(outputDir)
 
     # Create test file
@@ -163,6 +182,7 @@ if __name__ == '__main__':
     for inputKernel in inputKernels:
         kernelFile = inputKernel
         kernelName = os.path.basename(kernelFile)
+        kernelDir = os.path.dirname(kernelFile)
 
         print('')
         print(kernelName, end=' ', flush=True)
@@ -199,7 +219,7 @@ if __name__ == '__main__':
                 print('-> aborted preprocessing', end=' ', flush=True)
                 continue
         else:
-            if os.path.abspath(outputDir) != origDir:
+            if not os.path.samefile(outputDir, kernelDir):
                 shutil.copy(kernelFile, kernelName)
                 kernelFile = kernelName
 
@@ -234,7 +254,8 @@ if __name__ == '__main__':
             else:
                 creduceArgs = ['creduce']
 
-            creduceArgs.extend(['-n', '1'])
+            if args.n:
+                creduceArgs.extend(['-n', str(args.n)])
 
             if args.verbose:
                 creduceArgs.append('--verbose')
@@ -245,6 +266,10 @@ if __name__ == '__main__':
             subprocess.call(creduceArgs, env=env, universal_newlines=True)
 
         print('-> done', end=' ', flush=True)
+        if args.log and logFile:
+            logFile.write(kernelName + '\n')
 
     os.chdir(origDir)
     print('')
+    if args.log and logFile:
+        logFile.close()
