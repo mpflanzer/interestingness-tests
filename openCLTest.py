@@ -60,6 +60,7 @@ class InterestingnessTest:
                 'warning: incompatible pointer to integer conversion' not in outputClang and
                 'warning: incompatible integer to pointer conversion' not in outputClang and
                 'warning: incompatible pointer types initializing' not in outputClang and
+                'is uninitialized when used within its own initialization [-Wuninitialized]' not in outputClang and
                 'may be uninitialized when used here [-Wconditional-uninitialized]' not in outputClang and
                 'warning: use of GNU ?: conditional expression extension, omitting middle operand' not in outputClang and
                 'warning: control may reach end of non-void function [-Wreturn-type]' not in outputClang and
