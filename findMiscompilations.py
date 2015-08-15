@@ -155,7 +155,7 @@ if __name__ == '__main__':
 
     # Log completed kernels
     if args.log:
-        logFile = open(os.path.abspath(args.log), 'a')
+        logFile = open(os.path.abspath(args.log), 'a', 1)
 
     # Change to output directory
     os.chdir(outputDir)
