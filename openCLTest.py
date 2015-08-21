@@ -16,7 +16,7 @@ def which(cmd):
     return None
 
 class InterestingnessTest:
-    availableTests = ['miscompilation', 'crash-unoptimised', 'statically-valid', 'valid', 'oclgrind-miscompilation', 'oclgrind-optimised']
+    availableTests = ['miscompilation', 'crash-unoptimised', 'statically-valid', 'valid', 'csa-invalid', 'oclgrind-miscompilation', 'oclgrind-optimised']
 
     def __init__(self, test, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
         self.test = test
@@ -89,7 +89,7 @@ class InterestingnessTest:
 
         return False
 
-    def isStaticallyValid(self):
+    def isValidCLLauncherKernel(self):
         # Make sure comment with dimensions is preserved
         self.logProgress('Dimension')
         m = re.match('//.* -g [0-9]+,[0-9]+,[0-9]+ -l [0-9]+,[0-9]+,[0-9]+', self.kernelContent)
@@ -111,6 +111,8 @@ class InterestingnessTest:
         if not re.search('return\s*\(\s*get_global_id\s*\(\s*2\s*\)\s*\*\s*get_global_size\s*\(\s*1\s*\)\s*\+\s*get_global_id\s*\(\s*1\s*\)\s*\)\s*\*\s*get_global_size\s*\(\s*0\s*\)\s*\+\s*get_global_id\s*\(\s*0\s*\)\s*;', self.kernelContent):
             return False
 
+
+    def isStaticallyValid(self):
         # Run static analysis of the program
         # Better support for uninitialised values
         self.logProgress('Clang CL')
@@ -167,6 +169,9 @@ class InterestingnessTest:
         return True
 
     def isValid(self):
+        if not self.isValidCLLauncherKernel():
+            return False
+
         if not self.isStaticallyValid():
             return False
 
@@ -199,6 +204,9 @@ class InterestingnessTest:
         return True
 
     def isCompilerCrashUnoptimised(self):
+        if not self.isValidCLLauncherKernel():
+            return False
+
         if not self.isStaticallyValid():
             return False
 
@@ -231,6 +239,14 @@ class InterestingnessTest:
             return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300) is not None
         elif self.test == 'statically-valid':
             return self.isStaticallyValid()
+        elif self.test == 'csa-invalid':
+            if not self.isValidClang():
+                return False
+
+            if self.isValidClangAnalyzer():
+                return False
+
+            return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, False) is not None
         elif self.test == 'valid':
             return self.isValid()
 
