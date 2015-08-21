@@ -16,7 +16,7 @@ def which(cmd):
     return None
 
 class InterestingnessTest:
-    availableTests = ['miscompilation', 'crash-unoptimised', 'valid', 'oclgrind-miscompilation', 'oclgrind-optimised']
+    availableTests = ['miscompilation', 'crash-unoptimised', 'statically-valid', 'valid', 'oclgrind-miscompilation', 'oclgrind-optimised']
 
     def __init__(self, test, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
         self.test = test
@@ -49,10 +49,10 @@ class InterestingnessTest:
     def isValidResultAccess(self):
         return not re.search('result\s*\[', self.kernelContent) or re.search('result\s*\[\s*get_linear_global_id\s*\(\s*\)\s*\]', self.kernelContent)
 
-    def checkClang(self):
+    def isValidClang(self):
         outputClang = self.openCLEnv.runClangCL([self.kernelName], 300)
 
-        if outputClang:
+        if outputClang is not None:
             self.logOutput(outputClang)
 
             if ('warning: empty struct is a GNU extension' not in outputClang and
@@ -75,10 +75,10 @@ class InterestingnessTest:
 
         return False
 
-    def checkClangAnalyzer(self):
+    def isValidClangAnalyzer(self):
         outputClangAnalyzer = self.openCLEnv.runClangStaticAnalyzer([self.kernelName], 300)
 
-        if outputClangAnalyzer:
+        if outputClangAnalyzer is not None:
             self.logOutput(outputClangAnalyzer)
 
             if ('warning: Assigned value is garbage or undefined' not in outputClangAnalyzer and
@@ -114,11 +114,11 @@ class InterestingnessTest:
         # Run static analysis of the program
         # Better support for uninitialised values
         self.logProgress('Clang CL')
-        if not self.checkClang():
+        if not self.isValidClang():
             return False
 
         self.logProgress('Clang Static Analyzer')
-        if not self.checkClangAnalyzer():
+        if not self.isValidClangAnalyzer():
             return False
 
         return True
@@ -126,7 +126,7 @@ class InterestingnessTest:
     def checkOclgrind(self):
         outputOclgrind = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
 
-        if outputOclgrind:
+        if outputOclgrind is not None:
             self.logOutput(outputOclgrind)
             return True
 
@@ -135,12 +135,12 @@ class InterestingnessTest:
     def isMiscompiled(self):
         self.logProgress('Run optimised')
         outputOptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
-        if not outputOptimised:
+        if outputOptimised is None:
             return False
 
         self.logProgress('Run unoptimised')
         outputUnoptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
-        if not outputUnoptimised:
+        if outputUnoptimised is None:
             return False
 
         self.logProgress('Diff')
@@ -152,12 +152,12 @@ class InterestingnessTest:
     def isMiscompiledOclgrind(self):
         self.logProgress('Run optimised')
         outputOptimised = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300)
-        if not outputOptimised:
+        if outputOptimised is None:
             return False
 
         self.logProgress('Run unoptimised')
         outputUnoptimised = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
-        if not outputUnoptimised:
+        if outputUnoptimised is None:
             return False
 
         self.logProgress('Diff')
@@ -208,12 +208,12 @@ class InterestingnessTest:
 
         self.logProgress('Run optimised')
         outputOptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
-        if not outputOptimised:
+        if outputOptimised is None:
             return False
 
         self.logProgress('Run unoptimised')
         outputUnoptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
-        if outputUnoptimised:
+        if outputUnoptimised is not None:
             return False
 
         self.logProgress('Crash unoptimised')
@@ -229,6 +229,8 @@ class InterestingnessTest:
             return self.isValidMiscompilationOclgrind()
         elif self.test == 'oclgrind-optimised':
             return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300) is not None
+        elif self.test == 'statically-valid':
+            return self.isStaticallyValid()
         elif self.test == 'valid':
             return self.isValid()
 
