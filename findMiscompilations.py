@@ -163,7 +163,11 @@ if __name__ == '__main__':
     # Create test file
     if args.reduce:
         if sys.platform == 'win32':
-            pass
+            testFileName = 'test_wrapper.bat'
+            testFile = open(testFileName, 'w')
+            testFile.write(os.path.abspath(openCLTest.__file__) + ' --test ' + args.test + ' %1\r\n')
+            testFile.close()
+            os.chmod(testFileName, 0o744)
         else:
             testFileName = 'test_wrapper.sh'
             testFile = open(testFileName, 'w')
