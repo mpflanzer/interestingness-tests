@@ -61,6 +61,7 @@ class InterestingnessTest:
                 'warning: incompatible integer to pointer conversion' not in outputClang and
                 'warning: incompatible pointer types initializing' not in outputClang and
                 'is uninitialized when used within its own initialization [-Wuninitialized]' not in outputClang and
+                'is uninitialized when used here [-Wuninitialized]' not in outputClang and
                 'may be uninitialized when used here [-Wconditional-uninitialized]' not in outputClang and
                 'warning: use of GNU ?: conditional expression extension, omitting middle operand' not in outputClang and
                 'warning: control may reach end of non-void function [-Wreturn-type]' not in outputClang and
@@ -84,6 +85,7 @@ class InterestingnessTest:
             if ('warning: Assigned value is garbage or undefined' not in outputClangAnalyzer and
                 'is a garbage value' not in outputClangAnalyzer and
                 'warning: Dereference of null pointer' not in outputClangAnalyzer and
+                'warning: Array subscript is undefined' not in outputClangAnalyzer and
                 'results in a dereference of a null pointer' not in outputClangAnalyzer):
                 return True
 
