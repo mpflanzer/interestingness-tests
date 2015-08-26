@@ -83,6 +83,7 @@ class InterestingnessTest:
             self.logOutput(outputClangAnalyzer)
 
             if ('warning: Assigned value is garbage or undefined' not in outputClangAnalyzer and
+                'warning: Undefined or garbage value returned to caller' not in outputClangAnalyzer and
                 'is a garbage value' not in outputClangAnalyzer and
                 'warning: Dereference of null pointer' not in outputClangAnalyzer and
                 'warning: Array subscript is undefined' not in outputClangAnalyzer and
