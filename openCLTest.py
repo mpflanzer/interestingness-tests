@@ -60,6 +60,9 @@ class InterestingnessTest:
                 'warning: incompatible pointer to integer conversion' not in outputClang and
                 'warning: incompatible integer to pointer conversion' not in outputClang and
                 'warning: incompatible pointer types initializing' not in outputClang and
+                'warning: comparison between pointer and integer' not in outputClang and
+                'warning: ordered comparison between pointer and integer' not in outputClang and
+                'warning: ordered comparison between pointer and zero' not in outputClang and
                 'is uninitialized when used within its own initialization [-Wuninitialized]' not in outputClang and
                 'is uninitialized when used here [-Wuninitialized]' not in outputClang and
                 'may be uninitialized when used here [-Wconditional-uninitialized]' not in outputClang and
