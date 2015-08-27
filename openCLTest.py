@@ -311,7 +311,7 @@ class UnixOpenCLEnv(OpenCLEnv):
         return None
 
     def runOclgrindClLauncher(self, kernel, timeLimit, optimised = True):
-        oclgrindArgs = ['-Wall', '--memcheck-uninitialized', '--data-races', '--stop-errors', '1']
+        oclgrindArgs = ['-Wall', '--memcheck-uninitialized', '--data-races', '--uniform-writes', '--stop-errors', '1']
         args = ['-p', str(self.oclgrindPlatform), '-d', str(self.oclgrindDevice), '-f', kernel]
 
         if not optimised:
