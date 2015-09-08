@@ -16,7 +16,7 @@ def which(cmd):
     return None
 
 class InterestingnessTest:
-    availableTests = ['miscompilation', 'crash-unoptimised', 'error-vector', 'statically-valid', 'valid', 'csa-invalid', 'oclgrind-miscompilation', 'oclgrind-optimised']
+    availableTests = ['miscompilation', 'crash-unoptimised', 'error-vector', 'statically-valid', 'valid', 'csa-invalid', 'oclgrind-miscompilation', 'oclgrind-optimised', 'oclgrind-uninitialized']
 
     def __init__(self, test, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
         self.test = test
@@ -177,6 +177,27 @@ class InterestingnessTest:
 
         return True
 
+    def isFalsePositiveUninitializedOclgrind(self):
+        oclgrindArgsNew = ['-Wall', '--memcheck-uninitialized', '--data-races', '--uniform-writes']
+        oclgrindArgsOld = ['-Wall', '--uninitialized', '--data-races', '--uniform-writes']
+        args = ['-p', '0', '-d', '0', '-f', self.kernelName]
+
+        oclgrindNewInvocation = self.openCLEnv.check_output(['oclgrind'] + oclgrindArgsNew + [self.openCLEnv.clLauncher] + args, 300)
+        oclgrindOldInvocation = self.openCLEnv.check_output(['oclgrind'] + oclgrindArgsOld + [self.openCLEnv.clLauncher] + args, 300)
+
+        if oclgrindNewInvocation is None or oclgrindNewInvocation[1] != 0 or oclgrindOldInvocation is None or oclgrindOldInvocation[1] != 0:
+            return False
+
+        if 'Controlflow depends on uninitialized value' not in oclgrindNewInvocation[0] or 'call spir_func <2 x i32> @_Z7sub_satDv2_iS_' not in oclgrindNewInvocation[0]:
+            return False
+
+        if 'call spir_func <2 x i32> @_Z7sub_satDv2_iS_' in oclgrindOldInvocation[0]:
+            return False
+
+        self.logProgress('Oclgrind false positive')
+
+        return True
+
     def isValid(self):
         if not self.isValidCLLauncherKernel():
             return False
@@ -259,6 +280,8 @@ class InterestingnessTest:
             return self.isValidMiscompilationOclgrind()
         elif self.test == 'oclgrind-optimised':
             return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300) is not None
+        elif self.test == 'oclgrind-uninitialized':
+            return self.isFalsePositiveUninitializedOclgrind()
         elif self.test == 'statically-valid':
             return self.isStaticallyValid()
         elif self.test == 'csa-invalid':
