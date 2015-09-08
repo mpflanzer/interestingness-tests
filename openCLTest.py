@@ -16,7 +16,7 @@ def which(cmd):
     return None
 
 class InterestingnessTest:
-    availableTests = ['miscompilation', 'crash-unoptimised', 'statically-valid', 'valid', 'csa-invalid', 'oclgrind-miscompilation', 'oclgrind-optimised']
+    availableTests = ['miscompilation', 'crash-unoptimised', 'error-vector', 'statically-valid', 'valid', 'csa-invalid', 'oclgrind-miscompilation', 'oclgrind-optimised']
 
     def __init__(self, test, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
         self.test = test
@@ -50,47 +50,47 @@ class InterestingnessTest:
         return not re.search('result\s*\[', self.kernelContent) or re.search('result\s*\[\s*get_linear_global_id\s*\(\s*\)\s*\]', self.kernelContent)
 
     def isValidClang(self):
-        outputClang = self.openCLEnv.runClangCL([self.kernelName], 300)
+        clangInvocation = self.openCLEnv.runClangCL([self.kernelName], 300)
 
-        if outputClang is not None:
-            self.logOutput(outputClang)
+        if clangInvocation is not None and clangInvocation[1] == 0:
+            self.logOutput(clangInvocation[0])
 
-            if ('warning: empty struct is a GNU extension' not in outputClang and
-                'warning: use of GNU empty initializer extension' not in outputClang and
-                'warning: incompatible pointer to integer conversion' not in outputClang and
-                'warning: incompatible integer to pointer conversion' not in outputClang and
-                'warning: incompatible pointer types initializing' not in outputClang and
-                'warning: comparison between pointer and integer' not in outputClang and
-                'warning: ordered comparison between pointer and integer' not in outputClang and
-                'warning: ordered comparison between pointer and zero' not in outputClang and
-                'is uninitialized when used within its own initialization [-Wuninitialized]' not in outputClang and
-                'is uninitialized when used here [-Wuninitialized]' not in outputClang and
-                'may be uninitialized when used here [-Wconditional-uninitialized]' not in outputClang and
-                'warning: use of GNU ?: conditional expression extension, omitting middle operand' not in outputClang and
-                'warning: control may reach end of non-void function [-Wreturn-type]' not in outputClang and
-                'warning: control reaches end of non-void function [-Wreturn-type]' not in outputClang and
-                'warning: zero size arrays are an extension [-Wzero-length-array]' not in outputClang and
-                'excess elements in ' not in outputClang and
-                'warning: address of stack memory associated with local variable' not in outputClang and
-                'warning: type specifier missing' not in outputClang and
-                "warning: expected ';' at end of declaration list" not in outputClang and
-                ' declaration specifier [-Wduplicate-decl-specifier]' not in outputClang):
+            if ('warning: empty struct is a GNU extension' not in clangInvocation[0] and
+                'warning: use of GNU empty initializer extension' not in clangInvocation[0] and
+                'warning: incompatible pointer to integer conversion' not in clangInvocation[0] and
+                'warning: incompatible integer to pointer conversion' not in clangInvocation[0] and
+                'warning: incompatible pointer types initializing' not in clangInvocation[0] and
+                'warning: comparison between pointer and integer' not in clangInvocation[0] and
+                'warning: ordered comparison between pointer and integer' not in clangInvocation[0] and
+                'warning: ordered comparison between pointer and zero' not in clangInvocation[0] and
+                'is uninitialized when used within its own initialization [-Wuninitialized]' not in clangInvocation[0] and
+                'is uninitialized when used here [-Wuninitialized]' not in clangInvocation[0] and
+                'may be uninitialized when used here [-Wconditional-uninitialized]' not in clangInvocation[0] and
+                'warning: use of GNU ?: conditional expression extension, omitting middle operand' not in clangInvocation[0] and
+                'warning: control may reach end of non-void function [-Wreturn-type]' not in clangInvocation[0] and
+                'warning: control reaches end of non-void function [-Wreturn-type]' not in clangInvocation[0] and
+                'warning: zero size arrays are an extension [-Wzero-length-array]' not in clangInvocation[0] and
+                'excess elements in ' not in clangInvocation[0] and
+                'warning: address of stack memory associated with local variable' not in clangInvocation[0] and
+                'warning: type specifier missing' not in clangInvocation[0] and
+                "warning: expected ';' at end of declaration list" not in clangInvocation[0] and
+                ' declaration specifier [-Wduplicate-decl-specifier]' not in clangInvocation[0]):
                 return True
 
         return False
 
     def isValidClangAnalyzer(self):
-        outputClangAnalyzer = self.openCLEnv.runClangStaticAnalyzer([self.kernelName], 300)
+        clangAnalyzerInvocation = self.openCLEnv.runClangStaticAnalyzer([self.kernelName], 300)
 
-        if outputClangAnalyzer is not None:
-            self.logOutput(outputClangAnalyzer)
+        if clangAnalyzerInvocation is not None and clangAnalyzerInvocation[1] == 0:
+            self.logOutput(clangAnalyzerInvocation[0])
 
-            if ('warning: Assigned value is garbage or undefined' not in outputClangAnalyzer and
-                'warning: Undefined or garbage value returned to caller' not in outputClangAnalyzer and
-                'is a garbage value' not in outputClangAnalyzer and
-                'warning: Dereference of null pointer' not in outputClangAnalyzer and
-                'warning: Array subscript is undefined' not in outputClangAnalyzer and
-                'results in a dereference of a null pointer' not in outputClangAnalyzer):
+            if ('warning: Assigned value is garbage or undefined' not in clangAnalyzerInvocation[0] and
+                'warning: Undefined or garbage value returned to caller' not in clangAnalyzerInvocation[0] and
+                'is a garbage value' not in clangAnalyzerInvocation[0] and
+                'warning: Dereference of null pointer' not in clangAnalyzerInvocation[0] and
+                'warning: Array subscript is undefined' not in clangAnalyzerInvocation[0] and
+                'results in a dereference of a null pointer' not in clangAnalyzerInvocation[0]):
                 return True
 
         return False
@@ -132,45 +132,47 @@ class InterestingnessTest:
 
         return True
 
-    def checkOclgrind(self):
-        outputOclgrind = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
+    def isValidOclgrind(self):
+        oclgrindInvocation = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
 
-        if outputOclgrind is not None:
-            self.logOutput(outputOclgrind)
+        self.logOutput(oclgrindInvocation)
+
+        if oclgrindInvocation is not None and oclgrindInvocation[1] == 0:
+            self.logOutput(oclgrindInvocation[0])
             return True
 
         return False
 
     def isMiscompiled(self):
         self.logProgress('Run optimised')
-        outputOptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
-        if outputOptimised is None:
+        optimisedInvocation = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
+        if optimisedInvocation is None or optimisedInvocation[1] != 0:
             return False
 
         self.logProgress('Run unoptimised')
-        outputUnoptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
-        if outputUnoptimised is None:
+        unoptimisedInvocation = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
+        if unoptimisedInvocation is None or unoptimisedInvocation[1] != 0:
             return False
 
         self.logProgress('Diff')
-        if outputOptimised == outputUnoptimised:
+        if optimisedInvocation[0] == unoptimisedInvocation[0]:
             return False
 
         return True
 
     def isMiscompiledOclgrind(self):
         self.logProgress('Run optimised')
-        outputOptimised = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300)
-        if outputOptimised is None:
+        optimisedInvocation = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300)
+        if optimisedInvocation is None or optimisedInvocation[1] != 0:
             return False
 
         self.logProgress('Run unoptimised')
-        outputUnoptimised = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
-        if outputUnoptimised is None:
+        unoptimisedInvocation = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
+        if unoptimisedInvocation is None or unoptimisedInvocation[1] != 0:
             return False
 
         self.logProgress('Diff')
-        if outputOptimised == outputUnoptimised:
+        if optimisedInvocation[0] == unoptimisedInvocation[0]:
             return False
 
         return True
@@ -183,7 +185,7 @@ class InterestingnessTest:
             return False
 
         self.logProgress('Run Oclgrind')
-        if not self.checkOclgrind():
+        if not self.isValidOclgrind():
             return False
 
         return True
@@ -218,20 +220,33 @@ class InterestingnessTest:
             return False
 
         self.logProgress('Run Oclgrind')
-        if not self.checkOclgrind():
+        if not self.isValidOclgrind():
             return False
 
         self.logProgress('Run optimised')
-        outputOptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
-        if outputOptimised is None:
+        optimisedInvocation = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
+        if optimisedInvocation is None or optimisedInvocation[1] != 0:
             return False
 
         self.logProgress('Run unoptimised')
-        outputUnoptimised = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
-        if outputUnoptimised is not None:
+        unoptimisedInvocation = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
+        if unoptimisedInvocation is not None and unoptimisedInvocation[1] == 0:
             return False
 
         self.logProgress('Crash unoptimised')
+
+        return True
+
+    def hasClangError(self, err):
+        clangInvocation = self.openCLEnv.runClangCL([self.kernelName], 300)
+
+        if clangInvocation is None or clangInvocation[1] == 0:
+            return False
+
+        if err not in clangInvocation[0]:
+            return False
+
+        self.logProgress('Vector crash')
 
         return True
 
@@ -254,6 +269,18 @@ class InterestingnessTest:
                 return False
 
             return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, False) is not None
+        elif self.test == 'error-vector':
+            if not self.isValidCLLauncherKernel():
+                return False
+
+            if not self.hasClangError("error: can't convert between vector values of different size"):
+                return False
+
+            optimisedInvocation = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
+            if optimisedInvocation is None or optimisedInvocation[1] != 0:
+                return False
+
+            return True
         elif self.test == 'valid':
             return self.isValid()
 
@@ -270,8 +297,11 @@ class OpenCLEnv:
 
     def check_output(self, args, timeLimit):
         try:
-            return subprocess.check_output(args, universal_newlines=True, stderr=subprocess.STDOUT, timeout=timeLimit)
-        except sunprocess.SubprocessError:
+            output = subprocess.check_output(args, universal_newlines=True, stderr=subprocess.STDOUT, timeout=timeLimit)
+            return (output, 0)
+        except subprocess.CalledProcessError as err:
+            return (err.output, err.returncode)
+        except subprocess.SubprocessError:
             return None
 
     def runClangCL(self, args, timeLimit):
@@ -305,8 +335,7 @@ class UnixOpenCLEnv(OpenCLEnv):
         try:
             proc = subprocess.Popen(args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
             output, _ = proc.communicate(timeout=timeLimit)
-            if proc.returncode == 0:
-                return output
+            return (output, proc.returncode)
         except subprocess.SubprocessError:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
             proc.communicate()
@@ -333,8 +362,7 @@ class WinOpenCLEnv(OpenCLEnv):
         try:
             proc = subprocess.Popen(args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP, env=env)
             output, _ = proc.communicate(timeout=timeLimit)
-            if proc.returncode == 0:
-                return output
+            return (output, proc.returncode)
         except subprocess.SubprocessError:
             subprocess.call(['taskkill', '/F', '/T', '/PID', str(proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
             proc.communicate()
@@ -356,7 +384,7 @@ class WinOpenCLEnv(OpenCLEnv):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Interestingness tests for OpenCL kernels.')
-    parser.add_argument('--test', choices=InterestingnessTest.availableTests, default='miscompiled', help='Interestingness test')
+    parser.add_argument('--test', choices=InterestingnessTest.availableTests, default=InterestingnessTest.availableTests[0], help='Interestingness test')
     parser.add_argument('kernel', nargs='?', help='Filename of the OpenCL kernel')
 
     args = parser.parse_args()
