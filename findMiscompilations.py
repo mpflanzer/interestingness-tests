@@ -9,12 +9,14 @@ def which(cmd):
     if sys.platform == 'win32' and '.' not in cmd:
         cmd += '.exe'
 
-    if os.access(cmd, os.F_OK):
+    if os.path.isfile(cmd) and os.access(cmd, os.F_OK | os.X_OK):
         return cmd
 
     for path in os.environ["PATH"].split(os.pathsep):
-        if os.access(os.path.join(path, cmd), os.F_OK):
-            return os.path.join(path, cmd)
+        compoundPath = os.path.join(path, cmd)
+
+        if os.path.isfile(compoundPath) and os.access(compoundPath, os.F_OK | os.X_OK):
+            return compoundPath
 
     return None
 
@@ -160,22 +162,6 @@ if __name__ == '__main__':
     # Change to output directory
     os.chdir(outputDir)
 
-    # Create test file
-    if args.reduce:
-        if sys.platform == 'win32':
-            testFileName = 'test_wrapper.bat'
-            testFile = open(testFileName, 'w')
-            testFile.write(os.path.abspath(openCLTest.__file__) + ' --test ' + args.test + ' %1\r\n')
-            testFile.close()
-            os.chmod(testFileName, 0o744)
-        else:
-            testFileName = 'test_wrapper.sh'
-            testFile = open(testFileName, 'w')
-            testFile.write('#!/bin/bash\n')
-            testFile.write(os.path.abspath(openCLTest.__file__) + ' --test ' + args.test + ' $1\n')
-            testFile.close()
-            os.chmod(testFileName, 0o744)
-
     # Copy header files if unpreprocessed kernels should be reduced etc.
     if not args.preprocess and not args.preprocessed:
         shutil.copy(os.path.join(clSmithPath, 'CLSmith.h'), '.')
@@ -253,16 +239,33 @@ if __name__ == '__main__':
                     print('-> dimension reduced', end=' ', flush=True)
 
         if args.reduce:
+            # Create test file
+            if sys.platform == 'win32':
+                testFileName = 'test_wrapper.bat'
+                testFile = open(testFileName, 'w')
+                testFile.write(os.path.abspath(openCLTest.__file__) + ' --test ' + args.test + ' ' + kernelFile + '\r\n')
+                testFile.close()
+                os.chmod(testFileName, 0o744)
+            else:
+                testFileName = 'test_wrapper.sh'
+                testFile = open(testFileName, 'w')
+                testFile.write('#!/bin/bash\n')
+                testFile.write(os.path.abspath(openCLTest.__file__) + ' --test ' + args.test + ' ' + kernelFile + '\n')
+                testFile.close()
+                os.chmod(testFileName, 0o744)
+
             if sys.platform == 'win32':
                 creduceArgs = ['perl', '--', which('creduce.pl')]
             else:
                 creduceArgs = ['creduce']
 
             if args.n:
-                creduceArgs.extend(['-n', str(args.n)])
+                creduceArgs.extend(['--n', str(args.n)])
 
             if args.verbose:
-                creduceArgs.append('--verbose')
+                creduceArgs.append('--debug')
+
+            creduceArgs.append('--timing')
 
             creduceArgs.append(testFileName)
             creduceArgs.append(kernelFile)
