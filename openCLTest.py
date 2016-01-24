@@ -6,12 +6,14 @@ def which(cmd):
     if sys.platform == 'win32' and '.' not in cmd:
         cmd += '.exe'
 
-    if os.access(cmd, os.F_OK):
+    if os.path.isfile(cmd) and os.access(cmd, os.F_OK | os.X_OK):
         return cmd
 
     for path in os.environ["PATH"].split(os.pathsep):
-        if os.access(os.path.join(path, cmd), os.F_OK):
-            return os.path.join(path, cmd)
+        compoundPath = os.path.join(path, cmd)
+
+        if os.path.isfile(compoundPath) and os.access(compoundPath, os.F_OK | os.X_OK):
+            return compoundPath
 
     return None
 
