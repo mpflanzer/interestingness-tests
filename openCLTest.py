@@ -16,7 +16,7 @@ def which(cmd):
     return None
 
 class InterestingnessTest:
-    availableTests = ['miscompilation', 'crash-unoptimised', 'error-vector', 'statically-valid', 'valid', 'csa-invalid', 'oclgrind-miscompilation', 'oclgrind-optimised', 'oclgrind-uninitialized']
+    availableTests = ['miscompilation', 'crash-unoptimised', 'error-vector', 'statically-valid', 'valid', 'csa-invalid', 'oclgrind-miscompilation', 'oclgrind-optimised', 'oclgrind-uninitialized', 'wrong-code']
 
     def __init__(self, test, openCLEnv, kernelName, testPlatform, testDevice, outputFile = None, progressFile = None):
         self.test = test
@@ -133,12 +133,13 @@ class InterestingnessTest:
         return True
 
     def isValidOclgrind(self):
-        oclgrindInvocation = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
+        oclgrindInvocationOpt = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = True)
+        oclgrindInvocationUnopt = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
 
-        self.logOutput(oclgrindInvocation)
-
-        if oclgrindInvocation is not None and oclgrindInvocation[1] == 0:
-            self.logOutput(oclgrindInvocation[0])
+        if (oclgrindInvocationOpt is not None and
+                oclgrindInvocationUnopt is not None and
+                oclgrindInvocationOpt[1] == 0 and
+                oclgrindInvocationUnopt[1] == 0):
             return True
 
         return False
@@ -146,11 +147,15 @@ class InterestingnessTest:
     def isMiscompiled(self):
         self.logProgress('Run optimised')
         optimisedInvocation = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300)
+        if optimisedInvocation:
+            self.logProgress('Optimised result: ' + optimisedInvocation[0]);
         if optimisedInvocation is None or optimisedInvocation[1] != 0:
             return False
 
         self.logProgress('Run unoptimised')
         unoptimisedInvocation = self.openCLEnv.runKernel(self.testPlatform, self.testDevice, self.kernelName, 300, optimised = False)
+        if unoptimisedInvocation:
+            self.logProgress('Unoptimised result: ' + unoptimisedInvocation[0]);
         if unoptimisedInvocation is None or unoptimisedInvocation[1] != 0:
             return False
 
@@ -274,6 +279,8 @@ class InterestingnessTest:
     def runTest(self):
         if self.test == 'crash-unoptimised':
             return self.isCompilerCrashUnoptimised()
+        elif self.test == 'wrong-code':
+            return self.isMiscompiled()
         elif self.test == 'miscompilation':
             return self.isValidMiscompilation()
         elif self.test == 'oclgrind-miscompilation':

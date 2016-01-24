@@ -215,7 +215,7 @@ if __name__ == '__main__':
 
         # Check if kernel is interesting
         if args.check:
-            kernelTest = InterestingnessTest(args.test, openCLEnv, kernelFile, testPlatform, testDevice)
+            kernelTest = InterestingnessTest(args.test, openCLEnv, kernelFile, testPlatform, testDevice, progressFile=sys.stdout)
             result = kernelTest.runTest()
 
             if not result:
