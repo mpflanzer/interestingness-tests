@@ -82,6 +82,7 @@ class InterestingnessTest:
         return False
 
     def isValidClangAnalyzer(self):
+        return True
         clangAnalyzerInvocation = self.openCLEnv.runClangStaticAnalyzer([self.kernelName], 300)
 
         if clangAnalyzerInvocation is not None and clangAnalyzerInvocation[1] == 0:
@@ -184,26 +185,26 @@ class InterestingnessTest:
 
         return True
 
-    def isFalsePositiveUninitializedOclgrind(self):
-        oclgrindArgsNew = ['-Wall', '--memcheck-uninitialized', '--data-races', '--uniform-writes']
-        oclgrindArgsOld = ['-Wall', '--uninitialized', '--data-races', '--uniform-writes']
-        args = ['-p', '0', '-d', '0', '-f', self.kernelName]
+    #def isFalsePositiveUninitializedOclgrind(self):
+    #    oclgrindArgsNew = ['-Wall', '--memcheck-uninitialized', '--data-races', '--uniform-writes']
+    #    oclgrindArgsOld = ['-Wall', '--uninitialized', '--data-races', '--uniform-writes']
+    #    args = ['-p', '0', '-d', '0', '-f', self.kernelName]
 
-        oclgrindNewInvocation = self.openCLEnv.check_output(['oclgrind'] + oclgrindArgsNew + [self.openCLEnv.clLauncher] + args, 300)
-        oclgrindOldInvocation = self.openCLEnv.check_output(['oclgrind'] + oclgrindArgsOld + [self.openCLEnv.clLauncher] + args, 300)
+    #    oclgrindNewInvocation = self.openCLEnv.check_output(['oclgrind'] + oclgrindArgsNew + [self.openCLEnv.clLauncher] + args, 300)
+    #    oclgrindOldInvocation = self.openCLEnv.check_output(['oclgrind'] + oclgrindArgsOld + [self.openCLEnv.clLauncher] + args, 300)
 
-        if oclgrindNewInvocation is None or oclgrindNewInvocation[1] != 0 or oclgrindOldInvocation is None or oclgrindOldInvocation[1] != 0:
-            return False
+    #    if oclgrindNewInvocation is None or oclgrindNewInvocation[1] != 0 or oclgrindOldInvocation is None or oclgrindOldInvocation[1] != 0:
+    #        return False
 
-        if 'Controlflow depends on uninitialized value' not in oclgrindNewInvocation[0] or 'call spir_func <2 x i32> @_Z7sub_satDv2_iS_' not in oclgrindNewInvocation[0]:
-            return False
+    #    if 'Controlflow depends on uninitialized value' not in oclgrindNewInvocation[0] or 'call spir_func <2 x i32> @_Z7sub_satDv2_iS_' not in oclgrindNewInvocation[0]:
+    #        return False
 
-        if 'call spir_func <2 x i32> @_Z7sub_satDv2_iS_' in oclgrindOldInvocation[0]:
-            return False
+    #    if 'call spir_func <2 x i32> @_Z7sub_satDv2_iS_' in oclgrindOldInvocation[0]:
+    #        return False
 
-        self.logProgress('Oclgrind false positive')
+    #    self.logProgress('Oclgrind false positive')
 
-        return True
+    #    return True
 
     def isValid(self):
         if not self.isValidCLLauncherKernel():
@@ -290,7 +291,9 @@ class InterestingnessTest:
         elif self.test == 'oclgrind-optimised':
             return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300) is not None
         elif self.test == 'oclgrind-uninitialized':
-            return self.isFalsePositiveUninitializedOclgrind()
+            print('Deprecated!', file=sys.stderr)
+            return False
+        #    return self.isFalsePositiveUninitializedOclgrind()
         elif self.test == 'statically-valid':
             return self.isStaticallyValid()
         elif self.test == 'csa-invalid':
@@ -343,6 +346,7 @@ class OpenCLEnv:
             oclArgs.extend(['-I', self.libclcIncludePath])
 
         diagArgs = ['-g', '-c', '-Wall', '-Wextra', '-pedantic', '-Wconditional-uninitialized', '-Weverything', '-Wno-reserved-id-macro', '-fno-caret-diagnostics', '-fno-diagnostics-fixit-info', '-O1']
+        print(" ".join([self.clang] + oclArgs + diagArgs + args))
         return self.check_output([self.clang] + oclArgs + diagArgs + args, timeLimit)
 
     def runClangStaticAnalyzer(self, args, timeLimit):
@@ -375,12 +379,13 @@ class UnixOpenCLEnv(OpenCLEnv):
         return None
 
     def runOclgrindClLauncher(self, kernel, timeLimit, optimised = True):
-        oclgrindArgs = ['-Wall', '--memcheck-uninitialized', '--data-races', '--uniform-writes', '--stop-errors', '1']
+        oclgrindArgs = ['-Wall', '--uninitialized', '--data-races', '--uniform-writes', '--stop-errors', '1']
         args = ['-p', str(self.oclgrindPlatform), '-d', str(self.oclgrindDevice), '-f', kernel]
 
         if not optimised:
             args.append('---disable_opts')
 
+        print(" ".join(['oclgrind'] + oclgrindArgs + [self.clLauncher] + args))
         return self.check_output(['oclgrind'] + oclgrindArgs + [self.clLauncher] + args, timeLimit)
 
 class WinOpenCLEnv(OpenCLEnv):
