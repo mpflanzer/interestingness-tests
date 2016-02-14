@@ -346,7 +346,6 @@ class OpenCLEnv:
             oclArgs.extend(['-I', self.libclcIncludePath])
 
         diagArgs = ['-g', '-c', '-Wall', '-Wextra', '-pedantic', '-Wconditional-uninitialized', '-Weverything', '-Wno-reserved-id-macro', '-fno-caret-diagnostics', '-fno-diagnostics-fixit-info', '-O1']
-        print(" ".join([self.clang] + oclArgs + diagArgs + args))
         return self.check_output([self.clang] + oclArgs + diagArgs + args, timeLimit)
 
     def runClangStaticAnalyzer(self, args, timeLimit):
@@ -385,7 +384,6 @@ class UnixOpenCLEnv(OpenCLEnv):
         if not optimised:
             args.append('---disable_opts')
 
-        print(" ".join(['oclgrind'] + oclgrindArgs + [self.clLauncher] + args))
         return self.check_output(['oclgrind'] + oclgrindArgs + [self.clLauncher] + args, timeLimit)
 
 class WinOpenCLEnv(OpenCLEnv):
