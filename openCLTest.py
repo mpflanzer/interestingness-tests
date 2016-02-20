@@ -137,15 +137,16 @@ class InterestingnessTest:
 
     def isValidOclgrind(self):
         oclgrindInvocationOpt = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = True)
+
+        if oclgrindInvocationOpt is None or oclgrindInvocationOpt[1] != 0:
+            return False
+
         oclgrindInvocationUnopt = self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300, optimised = False)
 
-        if (oclgrindInvocationOpt is not None and
-                oclgrindInvocationUnopt is not None and
-                oclgrindInvocationOpt[1] == 0 and
-                oclgrindInvocationUnopt[1] == 0):
-            return True
+        if oclgrindInvocationUnopt is None or oclgrindInvocationUnopt[1] != 0:
+            return False
 
-        return False
+        return True
 
     def isMiscompiled(self):
         self.logProgress('Run optimised')
