@@ -408,7 +408,7 @@ class WinOpenCLEnv(OpenCLEnv):
     def runOclgrindClLauncher(self, kernel, timeLimit, optimised = True):
         oclgrindEnv = os.environ
         oclgrindEnv['OCLGRIND_DIAGNOSTIC_OPTIONS'] = '-Wall'
-        oclgrindEnv['OCLGRIND_MEMCHECK_UNINITIALIZED'] = '1'
+        oclgrindEnv['OCLGRIND_UNINITIALIZED'] = '1'
         oclgrindEnv['OCLGRIND_DATA_RACES'] = '1'
         oclgrindEnv['OCLGRIND_STOP_ERRORS'] = '1'
         args = ['-p', str(self.oclgrindPlatform), '-d', str(self.oclgrindDevice), '-f', kernel]
