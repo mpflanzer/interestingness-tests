@@ -91,6 +91,7 @@ class InterestingnessTest:
             if ('warning: Assigned value is garbage or undefined' not in clangAnalyzerInvocation[0] and
                 'warning: Undefined or garbage value returned to caller' not in clangAnalyzerInvocation[0] and
                 'is a garbage value' not in clangAnalyzerInvocation[0] and
+                'warning: Function call argument is an uninitialized value' not in clangAnalyzerInvocation[0] and
                 'warning: Dereference of null pointer' not in clangAnalyzerInvocation[0] and
                 'warning: Array subscript is undefined' not in clangAnalyzerInvocation[0] and
                 'results in a dereference of a null pointer' not in clangAnalyzerInvocation[0]):
