@@ -290,7 +290,7 @@ class InterestingnessTest:
         elif self.test == 'oclgrind-miscompilation':
             return self.isValidMiscompilationOclgrind()
         elif self.test == 'oclgrind-optimised':
-            return self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300) is not None
+            return not self.openCLEnv.runOclgrindClLauncher(self.kernelName, 300) is not None
         elif self.test == 'oclgrind-uninitialized':
             print('Deprecated!', file=sys.stderr)
             return False
