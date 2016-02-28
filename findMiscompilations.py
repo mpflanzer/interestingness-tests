@@ -260,12 +260,10 @@ if __name__ == '__main__':
                 creduceArgs = ['creduce']
 
             if args.n:
-                creduceArgs.extend(['--n', str(args.n)])
+                creduceArgs.extend(['-n', str(args.n)])
 
             if args.verbose:
-                creduceArgs.append('--debug')
-
-            creduceArgs.append('--timing')
+                creduceArgs.append('--verbose')
 
             creduceArgs.append(testFileName)
             creduceArgs.append(kernelFile)
